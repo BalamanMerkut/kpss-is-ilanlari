@@ -1,20 +1,36 @@
 # KPSS İş İlanları
 
 KPSS ile başvurulabilen kamu iş ilanlarını **resmî devlet sitelerinden** toplayıp
-mezuniyetinize ve puanınıza göre listeleyen ücretsiz Windows programı.
+mezuniyetinize ve puanınıza göre listeleyen **ücretsiz Windows programı**.
 
 ## 📥 Kurulum
 
-### [⬇ Programı indirmek için buraya tıklayın](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)
+> **Şu an GitHub adlı bir sitedesiniz.** Programcıların kodlarını paylaştığı bir sitedir.
+> **Üye olmanız veya giriş yapmanız gerekmez.** Sayfadaki dosya listesi ve diğer düğmeler programcılar içindir, onlara dokunmayın.
 
-1. Yukarıdaki bağlantıya tıklayın, **KPSS-Is-Ilanlari.exe** inecek.
-   Tarayıcı *"yaygın olarak indirilmiyor"* derse **Sakla / Yine de indir** seçin.
-2. İnen dosyaya çift tıklayın.
-   Windows *"bilgisayarınızı korudu"* derse **Ek bilgi → Yine de çalıştır** deyin. *(Sadece ilk seferde)*
-3. Program tarayıcınızda açılır. Mezuniyetinizi seçin, KPSS puanınızı yazın — bu kadar.
+### 1️⃣ Programı indirin
 
-Kurulum gerekmez. Dosyayı masaüstüne taşıyıp oradan açabilirsiniz.
-Yeni sürüm çıkınca programda **"Şimdi güncelle"** düğmesi belirir.
+## [⬇ PROGRAMI İNDİRMEK İÇİN TIKLAYIN](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)
+
+- İndirme hemen başlar.
+- Tarayıcı *"yaygın olarak indirilmiyor"* diye uyarırsa: **Chrome'da "Sakla"**, **Edge'de "⋯" → "Sakla" → "Yine de sakla"** seçin.
+- ⚠ Yeşil **"Code"** düğmesine basmayın. O programcılar içindir, program inmez.
+
+### 2️⃣ İndirilen dosyayı açın
+
+- **KPSS-Is-Ilanlari.exe** dosyası bilgisayarınızın **"İndirilenler"** klasörüne gelir.
+  Tarayıcının sağ üst köşesindeki **⬇ (indirilenler)** simgesine tıklayıp oradan da açabilirsiniz.
+- Dosyaya **çift tıklayın**.
+- Mavi bir *"Windows bilgisayarınızı korudu"* penceresi çıkarsa: **"Ek bilgi"** yazısına, sonra **"Yine de çalıştır"** düğmesine tıklayın. *(Sadece ilk açılışta çıkar.)*
+
+### 3️⃣ Kullanın
+
+- Birkaç saniye sonra program **internet tarayıcınızda** açılır. İlk açılışta ilanlar 1 dakika kadar yüklenir.
+- Mezuniyetinizi seçin, KPSS puanınızı yazın. Her işin yanında **"✔ Yetiyor"** ya da **"✘ Yetmiyor"** yazar.
+- Sonra tekrar açmak için aynı dosyaya çift tıklamanız yeterli. İsterseniz dosyayı masaüstüne sürükleyin.
+- Yeni sürüm çıkınca programın üstünde **"Şimdi güncelle"** düğmesi belirir, tekrar indirmenize gerek kalmaz.
+
+> 📱 Program yalnızca **Windows bilgisayarda** çalışır; telefonda ve Mac'te çalışmaz.
 
 ## ✔ Güvenli mi?
 
