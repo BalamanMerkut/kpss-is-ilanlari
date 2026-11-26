@@ -1,0 +1,39 @@
+KPSS İŞ İLANLARI – KURULUM GEREKMEZ
+===================================
+
+AÇMAK İÇİN
+  "KPSS İş İlanları.exe" dosyasına çift tıklayın. Birkaç saniye sonra
+  internet tarayıcınızda ilan ekranı açılır.
+  İlk açılışta ilanlar 1 dakika kadar indirilir; ekranın altında
+  mavi şeritte "Lütfen bekleyin" yazar.
+
+"WINDOWS BİLGİSAYARINIZI KORUDU" UYARISI ÇIKARSA
+  Bu program imzasız olduğu için Windows ilk açılışta bu uyarıyı gösterebilir.
+  "Ek bilgi" yazısına, sonra "Yine de çalıştır" düğmesine tıklayın.
+  (Bir kez yapmanız yeterli.)
+
+KULLANIM
+  1) Mezuniyetinizi seçin: Lise / Önlisans / Lisans / İşçi alımı
+  2) KPSS puanınızı yazın (örn. 72,50). Her işin yanında
+     "✔ Yetiyor" veya "✘ Yetmiyor" yazar.
+  3) İsterseniz şehir seçin veya iş adı arayın.
+  4) Bir işe tıklayın: nerede kaç kişi alınacağı ve başvuru düğmeleri açılır.
+     Başvurmadan önce "İlanın tamamını oku" ile şartları mutlaka okuyun.
+
+  "ÖSYM tercih kadroları" bölümünde ÖSYM'nin merkezi yerleştirme
+  kadroları ve o kadrolara yerleşilen en düşük puanlar görünür.
+
+GÜVENLİK
+  - İlanlar yalnızca devletin resmî sitelerinden alınır:
+    ilan.gov.tr (Basın İlan Kurumu), kariyerkapisi.gov.tr (Cumhurbaşkanlığı),
+    osym.gov.tr (ÖSYM).
+  - Puanınız yalnızca kendi bilgisayarınızda saklanır, hiçbir yere gönderilmez.
+  - Kamu ilanlarına başvuru ÜCRETSİZDİR. Sizden para, IBAN veya
+    "dosya ücreti" isteyen ilan SAHTEDİR.
+
+KAPATMAK
+  Tarayıcı sekmesini kapatmanız yeterli; program 15 dakika sonra
+  kendiliğinden kapanır.
+
+Not: Kişi sayısı, puan ve tarih bilgileri ilan metinlerinden otomatik
+okunur. Başvurmadan önce lütfen ilanın aslını kontrol edin.

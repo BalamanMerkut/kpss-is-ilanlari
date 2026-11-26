@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KPSS İş İlanları</title>
+<style>
+  :root {
+    --zemin: #f2f4f7; --kart: #fff; --yazi: #1a1d21; --soluk: #5d6673; --cizgi: #dde2e8;
+    --mavi: #0b57b0; --mavi-acik: #e8f0fb; --yesil: #18793a; --yesil-acik: #e2f3e7;
+    --kirmizi: #b42318; --kirmizi-acik: #fde8e6; --turuncu: #9a5b00; --turuncu-acik: #fff3de;
+    --gri-acik: #eef0f3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--zemin); color: var(--yazi); font: 18px/1.5 "Segoe UI", Arial, sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  .sayfa { max-width: 1180px; margin: 0 auto; padding: 16px 16px 90px; }
+
+  /* üst kısım */
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 10px; }
+  header h1 { margin: 0; font-size: 30px; }
+  .guncel { color: var(--soluk); font-size: 16px; }
+  .bosluk { flex: 1; }
+  .yenile { background: var(--yesil); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+  .yenile:disabled { background: #8d9c92; cursor: wait; }
+  .yardim-dugme { background: #fff; border: 2px solid var(--cizgi); border-radius: 10px; padding: 9px 16px; cursor: pointer; font-weight: 600; }
+  .serit { background: var(--yesil-acik); color: #134d27; border-radius: 10px; padding: 9px 14px; margin-bottom: 14px; font-size: 16px; }
+  .uyari { background: var(--kirmizi-acik); color: var(--kirmizi); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
+
+  /* adımlar */
+  .adimlar { background: var(--kart); border-radius: 16px; padding: 18px 20px; margin-bottom: 16px;
+             box-shadow: 0 1px 3px rgba(0,0,0,.06); display: grid; gap: 16px; }
+  .adim { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: start; }
+  .no { width: 36px; height: 36px; border-radius: 50%; background: var(--mavi); color: #fff; font-weight: 700;
+        display: grid; place-items: center; font-size: 19px; margin-top: 2px; }
+  .adim-baslik { font-weight: 700; margin-bottom: 8px; font-size: 19px; }
+  .secenekler { display: flex; flex-wrap: wrap; gap: 10px; }
+  .secenek { border: 2px solid var(--cizgi); background: #fff; border-radius: 12px; padding: 10px 18px; cursor: pointer;
+             font-weight: 600; text-align: left; min-width: 150px; }
+  .secenek small { display: block; font-weight: 400; color: var(--soluk); font-size: 15px; }
+  .secenek.secili { border-color: var(--mavi); background: var(--mavi); color: #fff; }
+  .secenek.secili small { color: #dce8f8; }
+  .puan-satir { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+  .puan-satir input { width: 150px; padding: 10px 12px; font-size: 24px; font-weight: 700; border: 2px solid var(--cizgi); border-radius: 10px; }
+  .puan-satir input:focus, .suzgec input:focus, .suzgec select:focus { outline: 3px solid #b9d3f5; border-color: var(--mavi); }
+  .ipucu { color: var(--soluk); font-size: 15px; }
+  .suzgec { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .suzgec select, .suzgec input[type=search] { padding: 9px 12px; border: 2px solid var(--cizgi); border-radius: 10px; background: #fff; min-width: 230px; }
+  .onay { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .onay input { width: 22px; height: 22px; }
+
+  /* görünüm seçimi */
+  .gorunum { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 0; }
+  .gorunum button { border: 0; background: #dfe4ea; padding: 13px 20px; cursor: pointer; font-weight: 600; border-radius: 12px 12px 0 0; margin-right: 6px; color: var(--soluk); }
+  .gorunum button.secili { background: var(--kart); color: var(--mavi); }
+  .gorunum .sayi { display: inline-block; background: var(--gri-acik); border-radius: 999px; padding: 0 9px; margin-left: 6px; font-size: 15px; color: var(--yazi); }
+  .panel { background: var(--kart); border-radius: 0 16px 16px 16px; padding: 14px 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .bilgi { background: var(--mavi-acik); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 16px; }
+  .bilgi.turuncu { background: var(--turuncu-acik); }
+
+  /* liste */
+  .satir-baslik, .satir { display: grid; grid-template-columns: minmax(0, 2.6fr) minmax(0, 1.2fr) 70px 110px 150px 170px; gap: 12px; align-items: center; }
+  .satir-baslik { font-size: 14px; color: var(--soluk); font-weight: 600; padding: 6px 12px; border-bottom: 2px solid var(--cizgi); text-transform: uppercase; letter-spacing: .3px; }
+  .satir { padding: 12px; border-bottom: 1px solid var(--cizgi); cursor: pointer; }
+  .satir:hover { background: #f7f9fc; }
+  .satir.acik { background: var(--mavi-acik); border-bottom-color: transparent; }
+  .is-adi { font-weight: 700; font-size: 19px; line-height: 1.3; }
+  .kurum { color: var(--soluk); font-size: 15px; line-height: 1.35; margin-top: 2px; }
+  .sag { text-align: right; }
+  .kisi { font-weight: 700; font-size: 20px; text-align: center; }
+  .puan { font-weight: 700; font-size: 18px; text-align: center; }
+  .puan small, .tarih small { display: block; font-weight: 400; font-size: 13px; color: var(--soluk); }
+  .tarih { font-size: 16px; }
+  .tarih.acil { color: var(--kirmizi); font-weight: 700; }
+  .durum { display: inline-block; border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 15px; text-align: center; }
+  .durum.evet { background: var(--yesil-acik); color: var(--yesil); }
+  .durum.hayir { background: var(--kirmizi-acik); color: var(--kirmizi); }
+  .durum.bilinmez { background: var(--gri-acik); color: var(--soluk); font-weight: 600; }
+  .etiket { display: none; }
+
+  .ayrinti { background: var(--mavi-acik); padding: 4px 16px 16px; border-bottom: 1px solid var(--cizgi); }
+  .ayrinti h4 { margin: 10px 0 4px; font-size: 16px; }
+  .ayrinti ul { margin: 0; padding-left: 22px; }
+  .ayrinti li { margin-bottom: 3px; }
+  .yerler { columns: 2; font-size: 16px; }
+  .dugmeler { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .dugme { border: 2px solid var(--mavi); color: var(--mavi); background: #fff; border-radius: 10px; padding: 8px 16px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .dugme.dolu { background: var(--mavi); color: #fff; }
+  .kaynak { color: var(--soluk); font-size: 14px; margin-top: 10px; }
+  .bos { text-align: center; padding: 36px 12px; color: var(--soluk); font-size: 19px; }
+  .daha { display: block; margin: 14px auto 0; background: #fff; border: 2px solid var(--cizgi); border-radius: 10px; padding: 10px 20px; cursor: pointer; font-weight: 600; }
+
+  .yukleniyor { position: fixed; left: 0; right: 0; bottom: 0; background: var(--mavi); color: #fff; padding: 14px; text-align: center; display: none; font-size: 18px; }
+  dialog { width: min(960px, 94vw); max-height: 88vh; border: 0; border-radius: 16px; padding: 0; }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  .pencere-ust { position: sticky; top: 0; background: var(--mavi); color: #fff; padding: 12px 18px; display: flex; gap: 12px; align-items: center; }
+  .pencere-ust h3 { margin: 0; font-size: 20px; flex: 1; }
+  .pencere-ust button { background: #fff; color: var(--mavi); border: 0; border-radius: 10px; padding: 8px 16px; font-weight: 700; cursor: pointer; }
+  .pencere-ic { padding: 16px 22px; font-size: 18px; }
+  .pencere-ic.metin { white-space: pre-wrap; }
+  .pencere-ic li { margin-bottom: 8px; }
+
+  /* dar ekran: satırlar alt alta */
+  @media (max-width: 860px) {
+    .satir-baslik { display: none; }
+    .satir { grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+    .satir > :first-child { grid-column: 1 / -1; }
+    .etiket { display: inline; color: var(--soluk); font-weight: 400; font-size: 14px; margin-right: 6px; }
+    .kisi, .puan { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="sayfa">
+  <header>
+    <h1>KPSS İş İlanları</h1>
+    <span class="guncel" id="guncel">Yükleniyor...</span>
+    <span class="bosluk"></span>
+    <button class="yardim-dugme" id="yardimDugme" type="button">❓ Nasıl kullanılır?</button>
+    <button class="yenile" id="yenileDugme" type="button">🔄 İlanları Yenile</button>
+  </header>
+
+  <div class="serit">✔ Bilgiler yalnızca resmî devlet sitelerinden alınır (ilan.gov.tr, Kariyer Kapısı, ÖSYM).
+    Kamu ilanlarına başvuru <b>ücretsizdir</b> — sizden para isteyen ilan <b>sahtedir</b>.</div>
+  <div id="hataKutusu" class="uyari" hidden></div>
+
+  <section class="adimlar">
+    <div class="adim">
+      <div class="no">1</div>
+      <div>
+        <div class="adim-baslik">Hangi okuldan mezunsunuz?</div>
+        <div class="secenekler" id="seviyeler"></div>
+      </div>
+    </div>
+    <div class="adim" id="puanAdimi">
+      <div class="no">2</div>
+      <div>
+        <div class="adim-baslik" id="puanBaslik">KPSS puanınızı yazın</div>
+        <div class="puan-satir">
+          <input id="puan" type="text" inputmode="decimal" placeholder="Örn: 72,50" autocomplete="off" aria-label="KPSS puanı">
+          <span class="ipucu" id="puanIpucu">Puanınızı yazınca her işin yanında "✔ Yetiyor" veya "✘ Yetmiyor" yazar. Bilmiyorsanız boş bırakın.</span>
+        </div>
+      </div>
+    </div>
+    <div class="adim">
+      <div class="no" id="sonAdimNo">3</div>
+      <div>
+        <div class="adim-baslik">İsterseniz daraltın</div>
+        <div class="suzgec">
+          <select id="sehir" aria-label="Şehir"><option value="">📍 Tüm şehirler</option></select>
+          <input id="ara" type="search" placeholder="🔍 İş ara (zabıta, şoför...)" aria-label="İş ara">
+          <label class="onay" id="yetmeyenSatir"><input id="yetmeyenGizle" type="checkbox"> Puanımın yetmediklerini gizle</label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="gorunum" id="gorunum"></nav>
+  <section class="panel">
+    <div id="panelBilgi"></div>
+    <div id="liste"></div>
+  </section>
+</div>
+
+<div class="yukleniyor" id="yukleniyor"></div>
+
+<dialog id="pencere">
+  <div class="pencere-ust"><h3 id="pencereBaslik"></h3><button type="button" id="pencereKapat">✕ Kapat</button></div>
+  <div class="pencere-ic" id="pencereIc"></div>
+</dialog>
+
+<script>
+"use strict";
+const SEVIYELER = [
+  { id: "lise",     ad: "Lise",     alt: "KPSS P94 puanı",  puan: "P94" },
+  { id: "onlisans", ad: "Önlisans", alt: "2 yıllık · P93",  puan: "P93" },
+  { id: "lisans",   ad: "Lisans",   alt: "4 yıllık · P3",   puan: "P3" },
+  { id: "isci",     ad: "İşçi alımı", alt: "KPSS istemeyen işler", puan: null },
+];
+const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const SAYFA_BOYU = 40;
+const $ = (id) => document.getElementById(id);
+
+let veri = { ilanlar: [] };
+let durum = {
+  seviye: localStorage.getItem("seviye") || "lise",
+  gorunum: localStorage.getItem("gorunum") || "ilan",
+  acik: null,          // açılmış satırın anahtarı
+  gosterilen: SAYFA_BOYU,
+};
+
+/* ---------- yardımcılar ---------- */
+function el(etiket, ozellik, ...cocuklar) {
+  const e = document.createElement(etiket);
+  for (const [k, v] of Object.entries(ozellik || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of cocuklar.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+function guvenliLink(u) {
+  try { const x = new URL(u); if (x.protocol === "https:" && (x.hostname === "gov.tr" || x.hostname.endsWith(".gov.tr"))) return x.href; } catch (e) {}
+  return null;
+}
+function tarihYaz(iso) { if (!iso) return null; const [y, a, g] = iso.split("-").map(Number); return `${g} ${AYLAR[a - 1]} ${y}`; }
+function kisaTarih(iso) { if (!iso) return null; const [y, a, g] = iso.split("-").map(Number); return `${g} ${AYLAR[a - 1]}`; }
+function kalanGun(iso) {
+  if (!iso) return null;
+  const bugun = new Date(veri.bugun || new Date().toISOString().slice(0, 10));
+  return Math.round((new Date(iso) - bugun) / 86400000);
+}
+function sayiYaz(v) { return v == null ? "—" : (Math.round(v * 100) / 100).toString().replace(".", ","); }
+function kucuk(s) { return (s || "").toLocaleLowerCase("tr"); }
+function guzelYaz(s) { // "ZABITA MEMURU" -> "Zabıta Memuru"
+  if (!s) return "";
+  if (s !== s.toLocaleUpperCase("tr")) return s;
+  const kucukKalsin = new Set(["ve", "ile", "veya", "ya", "da", "de"]);
+  return s.toLocaleLowerCase("tr")
+    .replace(/(^|[\s(/-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase("tr"))
+    .replace(/(\s)(\p{L}+)(?=\s)/gu, (m, a, w) => (kucukKalsin.has(w.toLocaleLowerCase("tr")) ? a + w.toLocaleLowerCase("tr") : m));
+}
+function seviye() { return SEVIYELER.find((s) => s.id === durum.seviye) || SEVIYELER[0]; }
+function benimPuanim() {
+  const v = parseFloat(($("puan").value || "").replace(",", "."));
+  return isNaN(v) || v <= 0 || v > 100 ? null : v;
+}
+
+/* ---------- veriyi satırlara çevir ---------- */
+function ilanSeviyeleri(ilan, p) {
+  if (ilan.isci) return ["isci"];
+  const s = (p.seviye || []).filter((x) => ["lise", "onlisans", "lisans"].includes(x));
+  return s.length ? s : ["diger"];
+}
+function aktifMi(ilan) { const k = kalanGun(ilan.son_basvuru); return k == null || k >= 0; }
+
+// Açık ilanlar: aynı ilandaki aynı işi tek satırda topla (şehirler ayrıntıda)
+function ilanSatirlari(sev, digerleriDahil) {
+  const satirlar = [];
+  for (const ilan of veri.ilanlar) {
+    if (!aktifMi(ilan)) continue;
+    const gruplar = new Map();
+    for (const p of ilan.pozisyonlar) {
+      const s = ilanSeviyeleri(ilan, p);
+      if (!(s.includes(sev.id) || (digerleriDahil && s.includes("diger") && sev.id !== "isci"))) continue;
+      const k = kucuk(p.unvan);
+      if (!gruplar.has(k)) gruplar.set(k, []);
+      gruplar.get(k).push(p);
+    }
+    for (const [k, pozlar] of gruplar) {
+      const adetler = pozlar.map((p) => p.adet).filter((x) => x);
+      const asgariler = pozlar.map((p) => p.asgari_puan).filter((x) => x != null);
+      const turler = [...new Set(pozlar.flatMap((p) => p.puan_turleri || []))];
+      const yerler = pozlar.map((p) => ({ yer: p.yer || p.il || ilan.il || "", adet: p.adet }));
+      const iller = [...new Set(pozlar.map((p) => p.il || ilan.il).filter(Boolean))];
+      satirlar.push({
+        tur: "ilan", anahtar: ilan.id + "|" + k, ilan,
+        is: guzelYaz(pozlar[0].unvan), kurum: guzelYaz(ilan.kurum),
+        iller, yerler,
+        adet: adetler.length ? adetler.reduce((a, b) => a + b, 0) : null,
+        adet_ilan_geneli: pozlar.some((p) => p.ilan_geneli),
+        asgari: asgariler.length ? Math.min(...asgariler) : null,
+        turler, diger: pozlar.some((p) => ilanSeviyeleri(ilan, p).includes("diger")),
+      });
+    }
+  }
+  return satirlar;
+}
+
+function osymSatirlari(sev) {
+  const o = veri.osym;
+  if (!o || !o.kadrolar) return [];
+  return o.kadrolar.filter((k) => k.seviye === sev.id).map((k) => ({
+    tur: "osym", anahtar: "O" + k.kod, k,
+    is: guzelYaz(k.unvan), kurum: guzelYaz(k.kurum),
+    iller: k.il ? [k.il] : [], ilce: guzelYaz(k.ilce),
+    adet: k.adet, asgari: k.taban, turler: [k.puan_turu],
+  }));
+}
+
+function uygunluk(s, sev) {
+  if (sev.puan == null) return { sinif: "bilinmez", yazi: "KPSS şartı yok" };
+  const benim = benimPuanim();
+  if (s.tur === "ilan" && sev.id === "lisans" && s.turler.length && !s.turler.includes("P3"))
+    return { sinif: "bilinmez", yazi: "Başka puan türü" };
+  if (s.asgari == null) return { sinif: "bilinmez", yazi: s.tur === "osym" ? (s.k.bos_kaldi ? "Boş kalmıştı" : "Bilgi yok") : "Puan şartı yazmıyor" };
+  if (benim == null) return { sinif: "bilinmez", yazi: "Puanınızı yazın" };
+  if (s.tur === "osym") return benim >= s.asgari ? { sinif: "evet", yazi: "✔ Yetmişti" } : { sinif: "hayir", yazi: "✘ Yetmemişti" };
+  return benim >= s.asgari ? { sinif: "evet", yazi: "✔ Yetiyor" } : { sinif: "hayir", yazi: "✘ Yetmiyor" };
+}
+
+function suz(satirlar, sev) {
+  const sehir = $("sehir").value, ara = kucuk($("ara").value.trim());
+  const gizle = $("yetmeyenGizle").checked;
+  return satirlar.filter((s) => {
+    if (sehir && !s.iller.includes(sehir)) return false;
+    if (ara && !kucuk(s.is + " " + s.kurum + " " + (s.ilce || "")).includes(ara)) return false;
+    if (gizle && uygunluk(s, sev).sinif === "hayir") return false;
+    return true;
+  });
+}
+
+/* ---------- çizim ---------- */
+function seviyeleriCiz() {
+  const kap = $("seviyeler"); kap.textContent = "";
+  for (const s of SEVIYELER) {
+    kap.append(el("button", { type: "button", class: "secenek" + (s.id === durum.seviye ? " secili" : ""),
+      onclick: () => { durum.seviye = s.id; localStorage.setItem("seviye", s.id); if (s.id === "isci") durum.gorunum = "ilan"; puanKutusunuHazirla(); sifirlaVeCiz(); } },
+      s.ad, el("small", {}, s.alt)));
+  }
+}
+
+function puanKutusunuHazirla() {
+  const sev = seviye();
+  $("puanAdimi").hidden = sev.puan == null;
+  $("yetmeyenSatir").hidden = sev.puan == null;
+  $("sonAdimNo").textContent = sev.puan == null ? "2" : "3";
+  if (sev.puan) {
+    $("puanBaslik").textContent = `KPSS ${sev.puan} puanınızı yazın`;
+    $("puan").value = localStorage.getItem("puan_" + sev.puan) || "";
+  }
+}
+
+function sehirleriDoldur() {
+  const sec = $("sehir"), once = localStorage.getItem("sehir") || "";
+  const iller = new Set();
+  veri.ilanlar.forEach((i) => i.pozisyonlar.forEach((p) => (p.il || i.il) && iller.add(p.il || i.il)));
+  ((veri.osym || {}).kadrolar || []).forEach((k) => k.il && iller.add(k.il));
+  sec.textContent = "";
+  sec.append(el("option", { value: "" }, "📍 Tüm şehirler"));
+  [...iller].sort((a, b) => a.localeCompare(b, "tr")).forEach((il) => sec.append(el("option", { value: il }, guzelYaz(il))));
+  sec.value = iller.has(once) ? once : "";
+}
+
+function sifirlaVeCiz() { durum.acik = null; durum.gosterilen = SAYFA_BOYU; ciz(); }
+
+function ciz() {
+  seviyeleriCiz();
+  const sev = seviye();
+  const digerleriGoster = localStorage.getItem("digerleri") === "1";
+  const ilanlar = suz(ilanSatirlari(sev, digerleriGoster), sev);
+  const osymlar = sev.id === "isci" ? [] : suz(osymSatirlari(sev), sev);
+  const o = veri.osym;
+
+  // görünüm sekmeleri
+  const nav = $("gorunum"); nav.textContent = "";
+  nav.append(el("button", { type: "button", class: durum.gorunum === "ilan" ? "secili" : "",
+    onclick: () => { durum.gorunum = "ilan"; localStorage.setItem("gorunum", "ilan"); sifirlaVeCiz(); } },
+    "📢 Şu an başvurulabilen işler", el("span", { class: "sayi" }, ilanlar.length)));
+  if (sev.id !== "isci" && o && o.kadrolar) {
+    nav.append(el("button", { type: "button", class: durum.gorunum === "osym" ? "secili" : "",
+      onclick: () => { durum.gorunum = "osym"; localStorage.setItem("gorunum", "osym"); sifirlaVeCiz(); } },
+      "🏛 ÖSYM tercih kadroları", el("span", { class: "sayi" }, osymlar.length)));
+  } else if (durum.gorunum === "osym") durum.gorunum = "ilan";
+
+  const bilgi = $("panelBilgi"); bilgi.textContent = "";
+  if (durum.gorunum === "osym") {
+    bilgi.append(osymBilgi(sev));
+    listeyiCiz(osymlar.sort((a, b) => (a.asgari ?? 999) - (b.asgari ?? 999)), sev, true);
+  } else {
+    if (sev.id === "isci") bilgi.append(el("div", { class: "bilgi" }, "Kamu kurumlarının işçi alımları. Çoğunda KPSS şartı yoktur; kura (noter çekilişi) ve sözlü/uygulamalı sınavla alınır. Şartları satıra tıklayıp okuyun."));
+    ilanlar.sort((a, b) => {
+      const ka = kalanGun(a.ilan.son_basvuru) ?? 9999, kb = kalanGun(b.ilan.son_basvuru) ?? 9999;
+      return ka - kb || a.is.localeCompare(b.is, "tr");
+    });
+    listeyiCiz(ilanlar, sev, false);
+    if (sev.id !== "isci") {
+      const digerSayi = ilanSatirlari(sev, true).filter((s) => s.diger).length;
+      if (digerSayi) {
+        $("liste").append(el("button", { type: "button", class: "daha", onclick: () => {
+          localStorage.setItem("digerleri", digerleriGoster ? "0" : "1"); sifirlaVeCiz(); } },
+          digerleriGoster ? "Mezuniyeti anlaşılamayan ilanları gizle" : `+ Mezuniyet şartı okunamayan ${digerSayi} ilanı da göster`));
+      }
+    }
+  }
+}
+
+function osymBilgi(sev) {
+  const o = veri.osym;
+  const kutu = el("div", { class: "bilgi" + (o.durum === "kapandi" ? " turuncu" : "") });
+  if (o.durum === "acik") {
+    kutu.append(el("b", {}, `✅ ${o.donem} tercihleri AÇIK`), o.tercih_bitis ? ` — son gün ${tarihYaz(o.tercih_bitis)}.` : ".",
+      " Tercihler ", el("a", { href: "https://ais.osym.gov.tr/", target: "_blank", rel: "noopener" }, "ais.osym.gov.tr"), " adresinden yapılır.");
+  } else if (o.durum === "yakinda") {
+    kutu.append(el("b", {}, `🔜 ${o.donem} tercih kılavuzu yayımlandı.`),
+      o.tercih_baslangic ? ` Tercihler ${tarihYaz(o.tercih_baslangic)} – ${tarihYaz(o.tercih_bitis)} arasında.` : "");
+  } else {
+    kutu.append(el("b", {}, `${o.donem} tercih dönemi kapandı`),
+      o.tercih_baslangic ? ` (${kisaTarih(o.tercih_baslangic)} – ${tarihYaz(o.tercih_bitis)}).` : ".",
+      " Bu liste, hangi işe kaç puanla girilebildiğini görmeniz içindir. ÖSYM yeni kılavuz yayımlayınca burası kendiliğinden yenilenir.");
+  }
+  const benim = benimPuanim();
+  if (benim != null) {
+    const hepsi = osymSatirlari(sev);
+    const yetti = hepsi.filter((s) => s.asgari != null && benim >= s.asgari);
+    const herkesYetti = yetti.filter((s) => s.k.herhangi_bolum);
+    kutu.append(el("br"), `Puanınız ${sayiYaz(benim)} ile ${hepsi.length} kadronun `, el("b", {}, `${yetti.length} tanesine`), " yerleşilebilmişti",
+      yetti.length ? (herkesYetti.length ? `; bunların ${herkesYetti.length} tanesi her bölümden mezuna açıktı.` : "; ama hepsi belirli bir okul bölümü istiyordu.") : ".");
+  }
+  const sat = el("label", { class: "onay", style: "margin-top:8px" },
+    el("input", { type: "checkbox", id: "herkeseAcik" }), "Sadece her bölümden mezunun başvurabildiği kadroları göster");
+  sat.firstChild.checked = localStorage.getItem("herkeseAcik") === "1";
+  sat.firstChild.addEventListener("change", (e) => { localStorage.setItem("herkeseAcik", e.target.checked ? "1" : "0"); sifirlaVeCiz(); });
+  return el("div", {}, kutu, sat);
+}
+
+function listeyiCiz(satirlar, sev, osymMi) {
+  const liste = $("liste"); liste.textContent = "";
+  if (osymMi && localStorage.getItem("herkeseAcik") === "1") satirlar = satirlar.filter((s) => s.k.herhangi_bolum);
+  if (!satirlar.length) {
+    liste.append(el("div", { class: "bos" }, veri.ilanlar.length || veri.osym
+      ? "Bu seçimlere uygun iş bulunamadı. Şehri \"Tüm şehirler\" yapmayı veya arama kutusunu temizlemeyi deneyin."
+      : "Henüz bilgi yok. Yukarıdaki yeşil \"İlanları Yenile\" düğmesine basın."));
+    return;
+  }
+  liste.append(el("div", { class: "satir-baslik" },
+    el("div", {}, "İş ve kurum"), el("div", {}, "Şehir"), el("div", { style: "text-align:center" }, "Kişi"),
+    el("div", { style: "text-align:center" }, osymMi ? "Taban puan" : "En az puan"),
+    el("div", {}, osymMi ? "Bölüm şartı" : "Son başvuru"), el("div", {}, osymMi ? "Puanım yetmiş mi?" : "Puanım yetiyor mu?")));
+  satirlar.slice(0, durum.gosterilen).forEach((s) => {
+    const u = uygunluk(s, sev);
+    let tarihHucre;
+    if (osymMi) {
+      tarihHucre = el("div", {}, el("span", { class: "etiket" }, "Bölüm:"), s.k.herhangi_bolum ? "Her bölüm" : "Bölüm şartı var");
+    } else {
+      const k = kalanGun(s.ilan.son_basvuru);
+      if (s.ilan.son_basvuru) {
+        tarihHucre = el("div", { class: "tarih" + (k <= 3 ? " acil" : "") }, el("span", { class: "etiket" }, "Son gün:"),
+          kisaTarih(s.ilan.son_basvuru), el("small", {}, k === 0 ? "BUGÜN son gün!" : `${k} gün kaldı` + (s.ilan.son_kesin ? "" : " (tahmini)")));
+      } else tarihHucre = el("div", { class: "tarih" }, el("span", { class: "etiket" }, "Son gün:"), "İlanda yazıyor");
+    }
+    const sehirYazi = s.iller.length > 1 ? `${s.iller.length} şehir` : (guzelYaz(s.iller[0]) || "—") + (s.ilce ? " / " + s.ilce : "");
+    const satir = el("div", { class: "satir" + (durum.acik === s.anahtar ? " acik" : ""), role: "button", tabindex: "0",
+      onclick: () => { durum.acik = durum.acik === s.anahtar ? null : s.anahtar; ciz(); },
+      onkeydown: (e) => { if (e.key === "Enter") { durum.acik = durum.acik === s.anahtar ? null : s.anahtar; ciz(); } } },
+      el("div", {}, el("div", { class: "is-adi" }, s.is || "—"), el("div", { class: "kurum" }, s.kurum)),
+      el("div", {}, el("span", { class: "etiket" }, "Şehir:"), sehirYazi),
+      el("div", { class: "kisi" }, el("span", { class: "etiket" }, "Kişi:"), s.adet ? String(s.adet) : "?"),
+      el("div", { class: "puan" }, el("span", { class: "etiket" }, osymMi ? "Taban:" : "En az:"), sayiYaz(s.asgari),
+        s.turler && s.turler.length && sev.puan ? el("small", {}, s.turler.slice(0, 3).join(", ")) : null),
+      tarihHucre,
+      el("div", {}, el("span", { class: "durum " + u.sinif }, u.yazi)));
+    liste.append(satir);
+    if (durum.acik === s.anahtar) liste.append(osymMi ? osymAyrinti(s) : ilanAyrinti(s));
+  });
+  if (satirlar.length > durum.gosterilen) {
+    liste.append(el("button", { type: "button", class: "daha", onclick: () => { durum.gosterilen += SAYFA_BOYU; ciz(); } },
+      `▼ Daha fazla göster (${satirlar.length - durum.gosterilen} iş daha)`));
+  }
+}
+
+function ilanAyrinti(s) {
+  const ilan = s.ilan;
+  const kutu = el("div", { class: "ayrinti" });
+  kutu.append(el("div", { style: "margin-top:10px" }, el("b", {}, ilan.baslik)));
+  if (ilan.basvuru_baslangic && kalanGun(ilan.basvuru_baslangic) > 0)
+    kutu.append(el("div", { style: "color:var(--kirmizi);font-weight:700" }, `🔜 Başvurular ${tarihYaz(ilan.basvuru_baslangic)} günü başlıyor.`));
+  if (s.yerler.length > 1 || (s.yerler[0] && s.yerler[0].yer)) {
+    kutu.append(el("h4", {}, s.adet_ilan_geneli ? "Yer" : "Nerede, kaç kişi?"),
+      el("ul", { class: s.yerler.length > 6 ? "yerler" : "" }, s.yerler.map((y) => el("li", {}, guzelYaz(y.yer || "—") + (y.adet && !s.adet_ilan_geneli ? ` — ${y.adet} kişi` : "")))));
+  }
+  if (s.adet_ilan_geneli && s.adet) kutu.append(el("div", { class: "kaynak" }, `Not: ${s.adet} kişi, ilanın tamamındaki toplam sayıdır (bütün kadrolar birlikte).`));
+  kutu.append(el("div", { style: "margin-top:8px" }, "Yaş, cinsiyet ve bölüm şartları için ilanın tamamını mutlaka okuyun."));
+  const d = el("div", { class: "dugmeler" },
+    el("button", { type: "button", class: "dugme", onclick: (e) => { e.stopPropagation(); metniAc(ilan); } }, "📄 İlanın tamamını oku"));
+  const kl = guvenliLink(ilan.kaynak_link), bl = guvenliLink(ilan.basvuru_link);
+  if (bl) d.append(el("a", { class: "dugme dolu", href: bl, target: "_blank", rel: "noopener" }, "✍ Başvuru sayfası"));
+  if (kl && kl !== bl) d.append(el("a", { class: "dugme", href: kl, target: "_blank", rel: "noopener" }, "🌐 Resmî ilan sayfası"));
+  kutu.append(d, el("div", { class: "kaynak" }, "Kaynak: " + ilan.kaynak + (ilan.ilan_no ? " · İlan no: " + ilan.ilan_no : "")));
+  return kutu;
+}
+
+function osymAyrinti(s) {
+  const k = s.k, o = veri.osym;
+  const kutu = el("div", { class: "ayrinti" });
+  kutu.append(el("h4", {}, "Kimler başvurabilir? (ÖSYM şartları)"),
+    el("ul", {}, (k.nitelik_metinleri || []).map((m) => el("li", {}, m))));
+  kutu.append(el("div", { style: "margin-top:8px" },
+    `Çalışma şekli: ${guzelYaz(k.istihdam) || "—"} · ÖSYM kodu: ${k.kod}`,
+    k.tavan != null ? ` · Yerleşen en yüksek puan: ${sayiYaz(k.tavan)}` : ""));
+  const d = el("div", { class: "dugmeler" });
+  const kl = guvenliLink(o.kilavuz_link), pl = guvenliLink((o.pdfler || {})[k.seviye]);
+  if (o.durum !== "kapandi") d.append(el("a", { class: "dugme dolu", href: "https://ais.osym.gov.tr/", target: "_blank", rel: "noopener" }, "✍ ÖSYM tercih sayfası"));
+  if (kl) d.append(el("a", { class: "dugme", href: kl, target: "_blank", rel: "noopener" }, "🌐 ÖSYM kılavuz sayfası"));
+  if (pl) d.append(el("a", { class: "dugme", href: pl, target: "_blank", rel: "noopener" }, "📄 Kadro tablosu (PDF)"));
+  kutu.append(d, el("div", { class: "kaynak" }, "Kaynak: osym.gov.tr · Taban puan = o kadroya yerleşen en düşük puan; sonraki dönemde değişebilir."));
+  return kutu;
+}
+
+/* ---------- pencereler ---------- */
+function pencereAc(baslik, icerik, metinMi) {
+  $("pencereBaslik").textContent = baslik;
+  const ic = $("pencereIc"); ic.className = "pencere-ic" + (metinMi ? " metin" : ""); ic.textContent = "";
+  ic.append(icerik);
+  $("pencere").showModal();
+}
+async function metniAc(ilan) {
+  pencereAc(guzelYaz(ilan.kurum), "Yükleniyor...", true);
+  try {
+    const r = await fetch("/api/metin?id=" + encodeURIComponent(ilan.id)).then((r) => r.json());
+    $("pencereIc").textContent = r.metin || "Metin bulunamadı. \"Resmî ilan sayfası\" düğmesini kullanın.";
+  } catch (e) {
+    $("pencereIc").textContent = "Metin açılamadı. Program kapanmış olabilir; masaüstündeki simgeden yeniden açın.";
+  }
+}
+$("pencereKapat").onclick = () => $("pencere").close();
+$("yardimDugme").onclick = () => pencereAc("Nasıl kullanılır?", el("ol", {},
+  el("li", {}, el("b", {}, "Mezuniyetinizi seçin. "), "Lise mezunuysanız \"Lise\" düğmesine basın."),
+  el("li", {}, el("b", {}, "KPSS puanınızı yazın. "), "Her işin yanında \"✔ Yetiyor\" ya da \"✘ Yetmiyor\" yazar. Puanınız bu bilgisayarda saklanır, kimseye gönderilmez."),
+  el("li", {}, el("b", {}, "İsterseniz şehir seçin "), "veya iş adı arayın (zabıta, şoför, büro...)."),
+  el("li", {}, el("b", {}, "Bir işe tıklayın: "), "nerede kaç kişi alınacağı ve başvuru düğmeleri açılır. Başvurmadan önce \"İlanın tamamını oku\" ile yaş, cinsiyet ve bölüm şartlarını okuyun."),
+  el("li", {}, el("b", {}, "\"ÖSYM tercih kadroları\" "), "ÖSYM'nin merkezi yerleştirmesidir. Tercih dönemi kapalıysa liste, hangi işe kaç puanla girildiğini görmeniz içindir."),
+  el("li", {}, el("b", {}, "Yeni ilanlar için "), "arada bir \"İlanları Yenile\" düğmesine basın. Program açılırken de kendisi yeniler."),
+  el("li", {}, el("b", {}, "Güvenlik: "), "Bilgiler yalnızca ilan.gov.tr, Kariyer Kapısı ve ÖSYM'den alınır. Başvurular e-Devlet / Kariyer Kapısı / ÖSYM üzerinden ve ücretsiz yapılır.")));
+
+/* ---------- veri ve yenileme ---------- */
+async function veriAl() {
+  veri = await fetch("/api/veri").then((r) => r.json());
+  $("guncel").textContent = veri.guncelleme ? "Son güncelleme: " + veri.guncelleme : "Henüz güncellenmedi";
+  sehirleriDoldur();
+  ciz();
+}
+async function durumIzle() {
+  const bant = $("yukleniyor"), dugme = $("yenileDugme");
+  let calisti = false;
+  while (true) {
+    let d;
+    try { d = await fetch("/api/durum").then((r) => r.json()); } catch (e) { break; }
+    if (d.calisiyor) {
+      calisti = true;
+      bant.style.display = "block"; bant.textContent = "⏳ " + (d.mesaj || "Güncelleniyor...") + " Lütfen bekleyin.";
+      dugme.disabled = true; dugme.textContent = "⏳ Güncelleniyor...";
+    } else {
+      bant.style.display = "none"; dugme.disabled = false; dugme.textContent = "🔄 İlanları Yenile";
+      const hk = $("hataKutusu");
+      hk.hidden = !d.hata; hk.textContent = d.hata ? "⚠ " + d.hata : "";
+      if (calisti) await veriAl();
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+}
+$("yenileDugme").onclick = async () => { await fetch("/api/yenile", { method: "POST" }); durumIzle(); };
+
+$("puan").addEventListener("input", () => {
+  const sev = seviye();
+  if (sev.puan) localStorage.setItem("puan_" + sev.puan, $("puan").value.trim());
+  ciz();
+});
+$("sehir").addEventListener("change", () => { localStorage.setItem("sehir", $("sehir").value); sifirlaVeCiz(); });
+$("ara").addEventListener("input", sifirlaVeCiz);
+$("yetmeyenGizle").addEventListener("change", sifirlaVeCiz);
+
+setInterval(() => fetch("/api/nabiz").catch(() => {}), 60000);
+puanKutusunuHazirla();
+veriAl().then(durumIzle);
+</script>
+</body>
+</html>

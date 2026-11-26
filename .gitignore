@@ -1,0 +1,12 @@
+# İndirilen ilan verileri ve önbellek (her bilgisayarda yeniden oluşur)
+veri/
+
+# Exe derleme çıktıları (exe GitHub Releases'te yayımlanır)
+derleme/
+Arkadaslara Gonder/*.exe
+Arkadaslara Gonder/*.zip
+*.spec
+
+__pycache__/
+*.pyc
+*.lnk
