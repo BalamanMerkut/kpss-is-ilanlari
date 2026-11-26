@@ -48,6 +48,10 @@ def surumu_kontrol_et():
         surum_durumu["yeni"] = guncelle.kontrol()
     except Exception as e:  # internet yoksa sessizce geç
         gunluge_yaz(f"Sürüm kontrolü yapılamadı: {e}")
+        return
+    # Yeni sürüm varsa sormadan kur (parmak izi doğrulaması guncelle.uygula içinde yapılır)
+    if guncelle.otomatik_kurulabilir_mi(surum_durumu["yeni"]):
+        guncellemeyi_baslat()
 
 
 def guncellemeyi_baslat():

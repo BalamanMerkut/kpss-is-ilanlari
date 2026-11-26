@@ -4,7 +4,7 @@ Güvenlik:
   - Yalnızca bu reponun GitHub "Releases" sayfasındaki exe indirilir.
   - İndirilen dosyanın SHA-256 parmak izi GitHub'ın bildirdiği değerle karşılaştırılır;
     tutmazsa dosya silinir, güncelleme yapılmaz.
-  - Güncelleme yalnızca kullanıcı "Güncelle" düğmesine bastığında yapılır.
+  - Exe açılışta yeni sürüm bulursa kullanıcıya sormadan kurar ve kendini yeniden başlatır.
 """
 import hashlib
 import json
@@ -15,7 +15,7 @@ import sys
 import time
 import urllib.request
 
-SURUM = "1.1"
+SURUM = "1.2"
 REPO = "BalamanMerkut/kpss-is-ilanlari"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 SAYFA = f"https://github.com/{REPO}/releases/latest"

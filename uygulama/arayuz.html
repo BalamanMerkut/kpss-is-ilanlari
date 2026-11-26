@@ -576,30 +576,27 @@ async function surumKontrol(deneme = 0) {
   }
   kutu.textContent = "";
   kutu.hidden = false;
-  kutu.append(el("span", {}, "🎉 ", el("b", {}, `Yeni sürüm var: ${s.yeni.surum}`), ` (şu anki: ${s.surum})`));
-  if (s.otomatik) {
-    kutu.append(el("button", { type: "button", class: "dugme dolu", onclick: guncellemeyiBaslat }, "⬆ Şimdi güncelle"),
-      el("span", { class: "ipucu" }, "1 dakika kadar sürer; program kendiliğinden yeniden açılır."));
-  } else {
-    const l = githubLink(s.yeni.sayfa || s.sayfa);
-    if (l) kutu.append(el("a", { class: "dugme dolu", href: l, target: "_blank", rel: "noopener" }, "⬇ İndirme sayfasını aç"));
+  if (s.otomatik && !s.hata) {
+    // exe yeni sürümü kendisi kuruyor: ilerlemeyi göster, bitince sayfayı yenile
+    guncellemeyiIzle(s.surum, s.yeni.surum);
+    return;
   }
+  kutu.append(el("span", {}, "🎉 ", el("b", {}, `Yeni sürüm var: ${s.yeni.surum}`), ` (şu anki: ${s.surum})`));
+  const l = githubLink(s.yeni.sayfa || s.sayfa);
+  if (l) kutu.append(el("a", { class: "dugme dolu", href: l, target: "_blank", rel: "noopener" }, "⬇ İndirme sayfasını aç"));
   if (s.hata) kutu.append(el("div", { style: "width:100%;color:var(--kirmizi)" }, "⚠ " + s.hata));
 }
-async function guncellemeyiBaslat() {
-  if (!confirm("Program yeni sürümü indirip kendini yeniden başlatacak. Devam edilsin mi?")) return;
+async function guncellemeyiIzle(eski, yeni) {
   const kutu = $("surumKutusu");
-  const eski = ($("surumNo").textContent || "").replace("Sürüm ", "");
-  kutu.textContent = "⏳ Güncelleme başlıyor...";
-  await fetch("/api/guncelle", { method: "POST" }).catch(() => {});
+  kutu.textContent = `⏳ Yeni sürüm (${yeni}) kuruluyor... Program birazdan kendiliğinden yeniden açılacak.`;
   const bitis = Date.now() + 180000;
   while (Date.now() < bitis) {
     await new Promise((r) => setTimeout(r, 1500));
     try {
       const s = await fetch("/api/surum").then((r) => r.json());
       if (s.surum !== eski) { location.reload(); return; }        // yeni sürüm açıldı
-      if (s.hata) { kutu.textContent = "⚠ " + s.hata; return; }
-      kutu.textContent = "⏳ " + (s.mesaj || "Güncelleniyor...") + " Lütfen bu sayfayı kapatmayın.";
+      if (s.hata) { surumKontrol(99); return; }                  // başarısız: indirme bağlantısını göster
+      kutu.textContent = `⏳ ${s.mesaj || "Yeni sürüm kuruluyor..."} Lütfen bu sayfayı kapatmayın.`;
     } catch (e) {
       kutu.textContent = "⏳ Program yeniden başlatılıyor... Lütfen bu sayfayı kapatmayın.";
     }
