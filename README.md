@@ -1,58 +1,35 @@
 # KPSS İş İlanları
 
-KPSS ile başvurulabilen kamu iş ilanlarını **yalnızca resmî devlet sitelerinden** toplayıp
-mezuniyete (Lise P94 / Önlisans P93 / Lisans P3 / İşçi alımı) göre sade bir listede gösteren Windows programı.
+KPSS ile başvurulabilen kamu iş ilanlarını **resmî devlet sitelerinden** toplayıp
+mezuniyetinize ve puanınıza göre listeleyen ücretsiz Windows programı.
 
-Bilgisayar kullanmayı az bilen biri de rahatça kullanabilsin diye tasarlandı:
-mezuniyetinizi seçin, KPSS puanınızı yazın, her işin yanında **"✔ Yetiyor" / "✘ Yetmiyor"** yazsın.
+## 📥 Kurulum
 
-## İndir (kurulum gerekmez)
+### [⬇ Programı indirmek için buraya tıklayın](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)
 
-👉 [**Son sürümü indir (Releases)**](../../releases/latest) → `KPSS-Is-Ilanlari.exe` dosyasına çift tıklayın.
+1. Yukarıdaki bağlantıya tıklayın, **KPSS-Is-Ilanlari.exe** inecek.
+   Tarayıcı *"yaygın olarak indirilmiyor"* derse **Sakla / Yine de indir** seçin.
+2. İnen dosyaya çift tıklayın.
+   Windows *"bilgisayarınızı korudu"* derse **Ek bilgi → Yine de çalıştır** deyin. *(Sadece ilk seferde)*
+3. Program tarayıcınızda açılır. Mezuniyetinizi seçin, KPSS puanınızı yazın — bu kadar.
 
-> Program imzasız olduğu için Windows ilk açılışta *"Windows bilgisayarınızı korudu"* diyebilir:
-> **Ek bilgi → Yine de çalıştır** deyin.
+Kurulum gerekmez. Dosyayı masaüstüne taşıyıp oradan açabilirsiniz.
+Yeni sürüm çıkınca programda **"Şimdi güncelle"** düğmesi belirir.
 
-## Neler gösterir?
+## ✔ Güvenli mi?
 
-- **Şu an başvurulabilen işler:** iş adı, kurum, şehir, kaç kişi alınacağı, en az KPSS puanı,
-  son başvuru tarihi (kaç gün kaldığı) ve puanınızın yetip yetmediği.
-  Bir işe tıklayınca hangi şehirde kaç kişi alınacağı, ilanın tam metni ve başvuru düğmeleri açılır.
-- **ÖSYM tercih kadroları:** ÖSYM'nin son KPSS tercih kılavuzundaki kadrolar, bölüm şartları (yazıyla)
-  ve o kadrolara yerleşilen **en düşük puan**. Tercih dönemi açıldığında bunu da gösterir.
-- Aynı ilan iki sitede birden yayımlanmışsa **bir kez** sayılır.
+- İlanlar yalnızca **ilan.gov.tr**, **Kariyer Kapısı** ve **ÖSYM** sitelerinden alınır.
+- Puanınız sadece kendi bilgisayarınızda kalır, hiçbir yere gönderilmez.
+- Kamu ilanlarına başvuru **ücretsizdir**. Para isteyen ilan **sahtedir**.
 
-## Kaynaklar (yalnızca resmî siteler)
+> Bilgiler ilan metinlerinden otomatik okunur. Başvurmadan önce ilanın aslını kontrol edin.
 
-| Kaynak | Ne alınıyor |
-|---|---|
-| [ilan.gov.tr](https://www.ilan.gov.tr) – T.C. Basın İlan Kurumu | Resmî Gazete'de yayımlanan kamu personel alım ilanlarının tam metni |
-| [kariyerkapisi.gov.tr](https://kariyerkapisi.gov.tr/isealim) – Cumhurbaşkanlığı İK Ofisi | Kadro/kontenjan bilgileri, kesin son başvuru tarihleri, başvuru bağlantıları |
-| [osym.gov.tr](https://www.osym.gov.tr) – ÖSYM | KPSS tercih kılavuzu kadro tabloları, nitelik kodları, yerleşme puanları |
+---
 
-Program başka hiçbir siteden ilan almaz ve adresi `.gov.tr` ile bitmeyen bağlantıları göstermez.
-**Kamu ilanlarına başvuru ücretsizdir; para isteyen ilan sahtedir.**
+<details>
+<summary>Geliştiriciler için</summary>
 
-Kişi sayısı, puan ve tarih bilgileri ilan metinlerinden otomatik okunur. Başvurmadan önce ilanın aslını kontrol edin.
-
-## Otomatik güncelleme
-
-Program her açılışta bu reponun son sürümünü (GitHub Releases) kontrol eder. Yeni sürüm varsa ekranda
-**"Şimdi güncelle"** düğmesi çıkar; basınca yeni exe indirilir, **SHA-256 parmak izi GitHub'ın bildirdiği değerle
-karşılaştırılır**, tutarsa eski exe'nin yerine konur ve program kendini yeniden açar.
-Güncelleme yalnızca kullanıcı düğmeye bastığında yapılır.
-
-Yeni sürüm yayımlamak için: `uygulama/guncelle.py` içindeki `SURUM` değerini artırın, exe'yi yeniden derleyin
-ve aynı numarayla (ör. `v1.2`) bir Release açıp `KPSS-Is-Ilanlari.exe` dosyasını ekleyin.
-
-## Gizlilik
-
-Program yalnızca kendi bilgisayarınızda çalışır (`127.0.0.1`). Yazdığınız puan sadece tarayıcınızda saklanır,
-hiçbir yere gönderilmez.
-
-## Geliştirme
-
-Python 3 ile yazıldı; ek kütüphane olarak yalnızca ÖSYM PDF tabloları için [PyMuPDF](https://pypi.org/project/PyMuPDF/) kullanır.
+Python 3 + [PyMuPDF](https://pypi.org/project/PyMuPDF/) (ÖSYM PDF tabloları için).
 
 ```powershell
 pip install pymupdf
@@ -61,14 +38,14 @@ python uygulama/sunucu.py
 
 | Dosya | Görevi |
 |---|---|
-| `uygulama/sunucu.py` | Yerel sunucu; ekranı tarayıcıda açar, verileri yeniler |
-| `uygulama/kaynaklar.py` | ilan.gov.tr ve Kariyer Kapısı'ndan ilan toplama, birleştirme, tekrar ayıklama |
-| `uygulama/ayristir.py` | İlan metinlerinden kadro, kişi sayısı, puan türü, son başvuru tarihi çıkarma |
-| `uygulama/osym.py`, `uygulama/pdf_tablo.py` | ÖSYM tercih kılavuzu PDF tablolarını okuma |
+| `uygulama/sunucu.py` | Yerel sunucu (127.0.0.1), ekranı tarayıcıda açar |
+| `uygulama/kaynaklar.py` | ilan.gov.tr ve Kariyer Kapısı'ndan ilan toplama, tekrar ayıklama |
+| `uygulama/ayristir.py` | İlan metninden kadro, kişi sayısı, puan türü, son tarih çıkarma |
+| `uygulama/osym.py`, `pdf_tablo.py` | ÖSYM tercih kılavuzu PDF tablolarını okuma |
+| `uygulama/guncelle.py` | GitHub Releases'ten SHA-256 doğrulamalı otomatik güncelleme |
 | `uygulama/arayuz.html` | Ekran |
 
-Exe'yi yeniden oluşturmak için (PyInstaller gerekir: `pip install pyinstaller`):
+**Yeni sürüm yayımlama:** `guncelle.py` içindeki `SURUM`'u artırın → `exe_yeniden_olustur.bat` →
+aynı numarayla (ör. `v1.2`) Release açıp `KPSS-Is-Ilanlari.exe` ekleyin.
 
-```powershell
-.\exe_yeniden_olustur.bat
-```
+</details>
