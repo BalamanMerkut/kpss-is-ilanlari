@@ -538,7 +538,10 @@ async function durumIzle() {
     try { d = await fetch("/api/durum").then((r) => r.json()); } catch (e) { break; }
     if (d.calisiyor) {
       calisti = true;
-      bant.style.display = "block"; bant.textContent = "⏳ " + (d.mesaj || "Güncelleniyor...") + " Lütfen bekleyin.";
+      bant.style.display = "block";
+      bant.textContent = (veri.ilanlar && veri.ilanlar.length)
+        ? "🔄 Yeni ilanlar kontrol ediliyor... Bu sırada listeyi kullanmaya devam edebilirsiniz."
+        : "⏳ " + (d.mesaj || "İlanlar yükleniyor...") + " Lütfen bekleyin.";
       dugme.disabled = true; dugme.textContent = "⏳ Güncelleniyor...";
     } else {
       bant.style.display = "none"; dugme.disabled = false; dugme.textContent = "🔄 İlanları Yenile";

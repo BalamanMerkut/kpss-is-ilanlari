@@ -9,8 +9,10 @@ Kaynaklar (yalnızca devlet siteleri):
 import json
 import os
 import re
+import threading
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
 
 import ayristir as A
@@ -19,6 +21,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) KPSS-Ilan-Takip/1.0"
 ILAN_API = "https://www.ilan.gov.tr/api/api/services/app/"
 KK_API = "https://api.kariyerkapisi.gov.tr/api/"
 TR_SAAT = timezone(timedelta(hours=3))
+AYNI_ANDA = 4  # aynı anda en fazla kaç indirme (sunucuları yormamak için düşük tutuldu)
 
 # Bu kategorideki ilanlar KPSS ile iş başvurusu değildir (akademik kadro, sertifika sınavı vb.)
 HARIC_KATEGORI = re.compile(
@@ -73,8 +76,12 @@ class Onbellek:
             return None
 
     def koy(self, ad, veri):
-        with open(self._yol(ad), "w", encoding="utf-8") as f:
+        # önce geçici dosyaya yaz, sonra yerine koy: yarım kalan yazma bozuk kayıt bırakmasın
+        yol = self._yol(ad)
+        gecici = f"{yol}.{os.getpid()}.{threading.get_ident()}.tmp"
+        with open(gecici, "w", encoding="utf-8") as f:
             json.dump(veri, f, ensure_ascii=False)
+        os.replace(gecici, yol)
 
 
 # ------------------------------------------------------------------ ilan.gov.tr
@@ -91,7 +98,7 @@ def ilan_gov_listesi(ilerleme):
         atla += 20
         if not parca or atla >= toplam or atla > 2000:
             break
-        time.sleep(0.3)
+        time.sleep(0.15)
     return ilanlar
 
 
@@ -131,19 +138,21 @@ def kk_alt_ilanlar(guid, onbellek):
     anahtar = f"kk_{guid}"
     d = onbellek.al(anahtar)
     if d is None:
+        hata = False
         try:
             d = _istek(KK_API + "altilan/GetAltIlanInfoByIlanIdPublic", {"ilanGuid": guid}, _kk_basliklar())
         except Exception:
-            d = []
+            d, hata = [], True
         if not isinstance(d, list):
             d = []
         try:
             on = _istek(KK_API + "ilan/GetIlanPreviewPublic", {"ilanGuid": guid}, _kk_basliklar())
         except Exception:
-            on = {}
+            on, hata = {}, True
         d = {"alt": d, "onizleme": {"ilanMetni": (on or {}).get("ilanMetni", ""),
                                     "eDevletServisURL": (on or {}).get("eDevletServisURL", "")}}
-        onbellek.koy(anahtar, d)
+        if not hata:  # geçici bir bağlantı hatasında boş sonucu kalıcı kaydetme; sonra tekrar denensin
+            onbellek.koy(anahtar, d)
         time.sleep(0.25)
     return d
 
@@ -208,11 +217,42 @@ def _satir(kaynak, **k):
     return k
 
 
+def _osym_topla(onbellek, bugun):
+    """ÖSYM verisini ayrı bir iş parçacığında toplar (ilan siteleriyle aynı anda)."""
+    try:
+        import osym
+        return osym.topla(onbellek, bugun), None
+    except Exception as e:
+        return None, f"ÖSYM tercih kılavuzu okunamadı: {e}"
+
+
+def _onceden_indir(isler, ilerleme, mesaj):
+    """İndirmeleri aynı anda (en fazla AYNI_ANDA kadar) yapar; sonuçlar diske kaydedilir.
+
+    Hatalar burada yutulur: asıl okuma aşaması aynı dosyayı tekrar ister ve hata orada kaydedilir.
+    """
+    if not isler:
+        return
+    biten = 0
+    with ThreadPoolExecutor(max_workers=AYNI_ANDA) as havuz:
+        for gelecek in as_completed([havuz.submit(f, *a) for f, *a in isler]):
+            biten += 1
+            ilerleme(f"{mesaj} ({biten}/{len(isler)})")
+            try:
+                gelecek.result()
+            except Exception:
+                pass
+
+
 def topla(veri_klasoru, ilerleme=lambda s: None):
     onbellek = Onbellek(os.path.join(veri_klasoru, "onbellek"))
     bugun = datetime.now(TR_SAAT).date()
     hatalar = []
     ilanlar = []  # her biri bir ilan; içinde pozisyonlar
+
+    # ÖSYM bağımsız bir kaynak: ilan siteleri okunurken arka planda aynı anda okunsun
+    osym_havuz = ThreadPoolExecutor(max_workers=1)
+    osym_gelecek = osym_havuz.submit(_osym_topla, onbellek, bugun)
 
     # --- 1) Kariyer Kapısı
     kk = []
@@ -228,6 +268,19 @@ def topla(veri_klasoru, ilerleme=lambda s: None):
         gov = ilan_gov_listesi(ilerleme)
     except Exception as e:
         hatalar.append(f"ilan.gov.tr'ye ulaşılamadı: {e}")
+
+    # Daha önce okunmamış ilan metinlerini aynı anda indir (okunanlar diskte kayıtlı, tekrar inmez)
+    isler = []
+    for ad in gov:
+        kategori = " ".join(v.get("value", "") for v in ad.get("values") or [])
+        if HARIC_KATEGORI.search(kategori) or HARIC_KATEGORI.search(ad.get("title") or ""):
+            continue
+        if onbellek.al(f"ilan_{ad['id']}") is None:
+            isler.append((ilan_gov_detay, ad["id"], onbellek))
+    for k in kk:
+        if k.get("guid") and onbellek.al(f"kk_{k['guid']}") is None:
+            isler.append((kk_alt_ilanlar, k["guid"], onbellek))
+    _onceden_indir(isler, ilerleme, "Yeni ilanlar indiriliyor...")
 
     kk_eslesen = set()
     gorulen = set()  # aynı ilan iki kez sayılmasın
@@ -360,15 +413,15 @@ def topla(veri_klasoru, ilerleme=lambda s: None):
                 tekil.append(p)
         ilan["pozisyonlar"] = tekil
 
-    # --- 3) ÖSYM merkezi yerleştirme (tercih kılavuzu kadroları)
-    osym_veri = None
-    try:
-        import osym
-        osym_veri = osym.topla(onbellek, bugun, ilerleme)
-        if osym_veri.get("hata"):
-            hatalar.append(osym_veri["hata"])
-    except Exception as e:
-        hatalar.append(f"ÖSYM tercih kılavuzu okunamadı: {e}")
+    # --- 3) ÖSYM merkezi yerleştirme (tercih kılavuzu kadroları) – arka planda okunuyordu
+    if not osym_gelecek.done():
+        ilerleme("ÖSYM tercih kılavuzu okunuyor...")
+    osym_veri, osym_hata = osym_gelecek.result()
+    osym_havuz.shutdown()
+    if osym_hata:
+        hatalar.append(osym_hata)
+    elif osym_veri and osym_veri.get("hata"):
+        hatalar.append(osym_veri["hata"])
 
     ilerleme("Hazırlanıyor...")
     return {

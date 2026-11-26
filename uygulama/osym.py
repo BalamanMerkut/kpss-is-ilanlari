@@ -11,6 +11,7 @@ import os
 import re
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 import ayristir as A
@@ -28,11 +29,23 @@ SEVIYELER = {
 }
 
 
+_ham = {}  # önceden (aynı anda) indirilmiş PDF baytları: url -> bayt
+
+
+def _pdf_bayt(url):
+    return _ham.pop(url, None) or _indir(url, 120)
+
+
+def _anahtar(fonk, url):
+    on_ek = "osymnit_" if fonk is _nitelikler else "osym_"
+    return on_ek + re.sub(r"[^A-Za-z0-9]", "_", url)[-120:]
+
+
 def _nitelikler(url, onbellek):
-    anahtar = "osymnit_" + re.sub(r"[^A-Za-z0-9]", "_", url)[-120:]
+    anahtar = _anahtar(_nitelikler, url)
     v = onbellek.al(anahtar)
     if v is None:
-        v = pdf_tablo.nitelik_kodlari(_indir(url, 120))
+        v = pdf_tablo.nitelik_kodlari(_pdf_bayt(url))
         onbellek.koy(anahtar, v)
     return v
 
@@ -126,10 +139,10 @@ def _alan(satir, *desenler):
 
 
 def _pdf_tablo(url, onbellek):
-    anahtar = "osym_" + re.sub(r"[^A-Za-z0-9]", "_", url)[-120:]
+    anahtar = _anahtar(_pdf_tablo, url)
     v = onbellek.al(anahtar)
     if v is None:
-        _, satirlar = pdf_tablo.tablo_oku(_indir(url, 120))
+        _, satirlar = pdf_tablo.tablo_oku(_pdf_bayt(url))
         v = satirlar
         onbellek.koy(anahtar, v)
     return v
@@ -185,9 +198,33 @@ def topla(onbellek, bugun, ilerleme=lambda s: None):
         except Exception:
             puan_linkleri = []
 
+    ozel_url = next((h for h, t in linkler if re.search(r"Özel Koşul", t, re.I)), None)
+
+    # Gereken PDF'leri aynı anda indirip okuyalım (sonuçlar diske kaydedilir; aşağıdaki kod oradan okur).
+    # Hata olursa burada yutulur; aşağıda aynı dosya tekrar istenir ve hata orada ele alınır.
+    isler = []
+    for ayar in SEVIYELER.values():
+        for desen, fonk in ((ayar["tablo"], _pdf_tablo), (ayar["nitelik"], _nitelikler)):
+            u = next((h for h, t in linkler if re.search(desen, t, re.I)), None)
+            if u:
+                isler.append((fonk, u))
+        u = next((h for h, t in puan_linkleri if re.search(ayar["sonuc"], t, re.I)), None)
+        if u:
+            isler.append((_pdf_tablo, u))
+    if ozel_url:
+        isler.append((_nitelikler, ozel_url))
+    # Not: PyMuPDF aynı anda birden çok iş parçacığından kullanılamaz; bu yüzden yalnızca
+    # İNDİRMELER aynı anda yapılır, PDF okuma aşağıda sırayla (tek iş parçacığında) yapılır.
+    indirilecek = [u for f, u in isler if onbellek.al(_anahtar(f, u)) is None]
+    with ThreadPoolExecutor(max_workers=4) as havuz:
+        for u, g in [(u, havuz.submit(_indir, u, 120)) for u in indirilecek]:
+            try:
+                _ham[u] = g.result()
+            except Exception:
+                pass
+
     # Özel koşullar (6xxx/7xxx kodları: cinsiyet, ehliyet, sertifika vb.) tüm seviyeler için ortak
     ozel_sozluk = {}
-    ozel_url = next((h for h, t in linkler if re.search(r"Özel Koşul", t, re.I)), None)
     if ozel_url:
         try:
             ozel_sozluk = _nitelikler(ozel_url, onbellek)
@@ -272,4 +309,5 @@ def topla(onbellek, bugun, ilerleme=lambda s: None):
         gorulen.add(k["kod"])
         tekil.append(k)
     sonuc["kadrolar"] = tekil
+    _ham.clear()
     return sonuc
