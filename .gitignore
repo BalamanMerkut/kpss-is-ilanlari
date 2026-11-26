@@ -7,6 +7,11 @@ Arkadaslara Gonder/*.exe
 Arkadaslara Gonder/*.zip
 *.spec
 
+# Yalnızca yerel kullanım için yardımcı dosyalar (repoda görünmesin)
+*.bat
+*.txt
+Arkadaslara Gonder/
+
 __pycache__/
 *.pyc
 *.lnk

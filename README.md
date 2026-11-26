@@ -42,7 +42,8 @@ python uygulama/sunucu.py
 | `uygulama/guncelle.py` | GitHub Releases'ten SHA-256 doğrulamalı otomatik güncelleme |
 | `uygulama/arayuz.html` | Ekran |
 
-**Yeni sürüm yayımlama:** `guncelle.py` içindeki `SURUM`'u artırın → `exe_yeniden_olustur.bat` →
-aynı numarayla (ör. `v1.2`) Release açıp `KPSS-Is-Ilanlari.exe` ekleyin.
+**Yeni sürüm yayımlama:** `guncelle.py` içindeki `SURUM`'u artırın → PyInstaller ile tek dosya exe derleyin
+(`--onefile --noconsole --add-data arayuz.html --collect-all pymupdf`) → aynı numarayla (ör. `v1.2`) Release açıp
+`KPSS-Is-Ilanlari.exe` ekleyin.
 
 </details>
