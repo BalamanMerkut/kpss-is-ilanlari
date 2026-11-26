@@ -15,7 +15,7 @@ import sys
 import time
 import urllib.request
 
-SURUM = "1.2"
+SURUM = "1.3"
 REPO = "BalamanMerkut/kpss-is-ilanlari"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 SAYFA = f"https://github.com/{REPO}/releases/latest"
