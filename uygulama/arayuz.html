@@ -25,6 +25,11 @@
   .yenile:disabled { background: #8d9c92; cursor: wait; }
   .yardim-dugme { background: #fff; border: 2px solid var(--cizgi); border-radius: 10px; padding: 9px 16px; cursor: pointer; font-weight: 600; }
   .serit { background: var(--yesil-acik); color: #134d27; border-radius: 10px; padding: 9px 14px; margin-bottom: 14px; font-size: 16px; }
+  .surum { background: #fff4cc; border: 2px solid #e8c547; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px;
+           display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-size: 17px; }
+  .surum b { font-size: 18px; }
+  .surum .dugme { font-size: 17px; }
+  .surum-no { color: var(--soluk); font-size: 14px; }
   .uyari { background: var(--kirmizi-acik); color: var(--kirmizi); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
 
   /* adımlar */
@@ -115,6 +120,7 @@
   <header>
     <h1>KPSS İş İlanları</h1>
     <span class="guncel" id="guncel">Yükleniyor...</span>
+    <span class="surum-no" id="surumNo"></span>
     <span class="bosluk"></span>
     <button class="yardim-dugme" id="yardimDugme" type="button">❓ Nasıl kullanılır?</button>
     <button class="yenile" id="yenileDugme" type="button">🔄 İlanları Yenile</button>
@@ -122,6 +128,7 @@
 
   <div class="serit">✔ Bilgiler yalnızca resmî devlet sitelerinden alınır (ilan.gov.tr, Kariyer Kapısı, ÖSYM).
     Kamu ilanlarına başvuru <b>ücretsizdir</b> — sizden para isteyen ilan <b>sahtedir</b>.</div>
+  <div id="surumKutusu" class="surum" hidden></div>
   <div id="hataKutusu" class="uyari" hidden></div>
 
   <section class="adimlar">
@@ -553,7 +560,55 @@ $("sehir").addEventListener("change", () => { localStorage.setItem("sehir", $("s
 $("ara").addEventListener("input", sifirlaVeCiz);
 $("yetmeyenGizle").addEventListener("change", sifirlaVeCiz);
 
+/* ---------- otomatik güncelleme ---------- */
+function githubLink(u) {
+  try { const x = new URL(u); if (x.protocol === "https:" && x.hostname === "github.com" && x.pathname.startsWith("/BalamanMerkut/kpss-is-ilanlari/")) return x.href; } catch (e) {}
+  return null;
+}
+async function surumKontrol(deneme = 0) {
+  let s;
+  try { s = await fetch("/api/surum").then((r) => r.json()); } catch (e) { return; }
+  $("surumNo").textContent = "Sürüm " + s.surum;
+  const kutu = $("surumKutusu");
+  if (!s.yeni) {
+    if (deneme < 4) setTimeout(() => surumKontrol(deneme + 1), 4000); // kontrol arka planda sürüyor olabilir
+    return;
+  }
+  kutu.textContent = "";
+  kutu.hidden = false;
+  kutu.append(el("span", {}, "🎉 ", el("b", {}, `Yeni sürüm var: ${s.yeni.surum}`), ` (şu anki: ${s.surum})`));
+  if (s.otomatik) {
+    kutu.append(el("button", { type: "button", class: "dugme dolu", onclick: guncellemeyiBaslat }, "⬆ Şimdi güncelle"),
+      el("span", { class: "ipucu" }, "1 dakika kadar sürer; program kendiliğinden yeniden açılır."));
+  } else {
+    const l = githubLink(s.yeni.sayfa || s.sayfa);
+    if (l) kutu.append(el("a", { class: "dugme dolu", href: l, target: "_blank", rel: "noopener" }, "⬇ İndirme sayfasını aç"));
+  }
+  if (s.hata) kutu.append(el("div", { style: "width:100%;color:var(--kirmizi)" }, "⚠ " + s.hata));
+}
+async function guncellemeyiBaslat() {
+  if (!confirm("Program yeni sürümü indirip kendini yeniden başlatacak. Devam edilsin mi?")) return;
+  const kutu = $("surumKutusu");
+  const eski = ($("surumNo").textContent || "").replace("Sürüm ", "");
+  kutu.textContent = "⏳ Güncelleme başlıyor...";
+  await fetch("/api/guncelle", { method: "POST" }).catch(() => {});
+  const bitis = Date.now() + 180000;
+  while (Date.now() < bitis) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const s = await fetch("/api/surum").then((r) => r.json());
+      if (s.surum !== eski) { location.reload(); return; }        // yeni sürüm açıldı
+      if (s.hata) { kutu.textContent = "⚠ " + s.hata; return; }
+      kutu.textContent = "⏳ " + (s.mesaj || "Güncelleniyor...") + " Lütfen bu sayfayı kapatmayın.";
+    } catch (e) {
+      kutu.textContent = "⏳ Program yeniden başlatılıyor... Lütfen bu sayfayı kapatmayın.";
+    }
+  }
+  kutu.textContent = "Program yeniden açılamadıysa, programı (exe dosyasını) tekrar çift tıklayarak açın.";
+}
+
 setInterval(() => fetch("/api/nabiz").catch(() => {}), 60000);
+surumKontrol();
 puanKutusunuHazirla();
 veriAl().then(durumIzle);
 </script>

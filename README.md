@@ -35,6 +35,16 @@ Program başka hiçbir siteden ilan almaz ve adresi `.gov.tr` ile bitmeyen bağl
 
 Kişi sayısı, puan ve tarih bilgileri ilan metinlerinden otomatik okunur. Başvurmadan önce ilanın aslını kontrol edin.
 
+## Otomatik güncelleme
+
+Program her açılışta bu reponun son sürümünü (GitHub Releases) kontrol eder. Yeni sürüm varsa ekranda
+**"Şimdi güncelle"** düğmesi çıkar; basınca yeni exe indirilir, **SHA-256 parmak izi GitHub'ın bildirdiği değerle
+karşılaştırılır**, tutarsa eski exe'nin yerine konur ve program kendini yeniden açar.
+Güncelleme yalnızca kullanıcı düğmeye bastığında yapılır.
+
+Yeni sürüm yayımlamak için: `uygulama/guncelle.py` içindeki `SURUM` değerini artırın, exe'yi yeniden derleyin
+ve aynı numarayla (ör. `v1.2`) bir Release açıp `KPSS-Is-Ilanlari.exe` dosyasını ekleyin.
+
 ## Gizlilik
 
 Program yalnızca kendi bilgisayarınızda çalışır (`127.0.0.1`). Yazdığınız puan sadece tarayıcınızda saklanır,

@@ -20,6 +20,7 @@ KLASOR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, KLASOR)
 import kaynaklar  # noqa: E402
 import osym  # noqa: E402,F401  (exe paketine dahil edilmesi için)
+import guncelle  # noqa: E402
 
 if EXE_MI:
     # Arkadaşların bilgisayarında: veriler kullanıcının kendi klasörüne
@@ -28,7 +29,7 @@ else:
     VERI_KLASORU = os.path.join(os.path.dirname(KLASOR), "veri")
 VERI_DOSYASI = os.path.join(VERI_KLASORU, "ilanlar.json")
 GUNLUK = os.path.join(VERI_KLASORU, "hata_gunlugu.txt")
-PORT = 8765
+PORT = int(os.environ.get("KPSS_PORT") or 8765)  # test için başka port verilebilir
 ESKI_SAYILIR_SANIYE = 3 * 3600  # 3 saatten eski veri açılışta otomatik yenilenir
 BOSTA_KAPANMA_SANIYE = 15 * 60  # ekran kapatıldıktan 15 dk sonra program kendiliğinden kapanır
 
@@ -38,6 +39,33 @@ durum = {"calisiyor": False, "mesaj": "", "hata": None}
 kilit = threading.Lock()
 son_nabiz = [time.time()]
 veri_onbellek = {"zaman": 0, "liste": None, "metinler": {}}
+surum_durumu = {"yeni": None, "guncelleniyor": False, "mesaj": "", "hata": None}
+sunucu_ref = [None]
+
+
+def surumu_kontrol_et():
+    try:
+        surum_durumu["yeni"] = guncelle.kontrol()
+    except Exception as e:  # internet yoksa sessizce geç
+        gunluge_yaz(f"Sürüm kontrolü yapılamadı: {e}")
+
+
+def guncellemeyi_baslat():
+    if surum_durumu["guncelleniyor"] or not guncelle.otomatik_kurulabilir_mi(surum_durumu["yeni"]):
+        return
+    surum_durumu.update(guncelleniyor=True, hata=None, mesaj="Başlatılıyor...")
+
+    def is_parcacigi():
+        try:
+            guncelle.uygula(surum_durumu["yeni"], lambda s: surum_durumu.__setitem__("mesaj", s))
+            time.sleep(1.0)  # son yanıtların gitmesi için
+            if sunucu_ref[0]:
+                sunucu_ref[0].shutdown()  # yeni sürüm bu portu devralacak
+        except Exception as e:
+            gunluge_yaz(traceback.format_exc())
+            surum_durumu.update(guncelleniyor=False, hata=f"Güncelleme yapılamadı: {e}")
+
+    threading.Thread(target=is_parcacigi, daemon=True).start()
 
 
 def gunluge_yaz(s):
@@ -132,14 +160,26 @@ class Isleyici(BaseHTTPRequestHandler):
             return self._gonder(200, durum)
         if u.path == "/api/nabiz":
             return self._gonder(200, {"ok": True})
+        if u.path == "/api/surum":
+            return self._gonder(200, dict(surum_durumu, surum=guncelle.SURUM, exe_mi=guncelle.EXE_MI,
+                                          otomatik=guncelle.otomatik_kurulabilir_mi(surum_durumu["yeni"]),
+                                          sayfa=guncelle.SAYFA))
         return self._gonder(404, {"hata": "bulunamadı"})
 
     def do_POST(self):
         if not self._yerel_mi():
             return self._gonder(403, {"hata": "yasak"})
-        if urlparse(self.path).path == "/api/yenile":
+        # Başka bir web sitesinin bu düğmelere basmasını engelle
+        koken = self.headers.get("Origin")
+        if koken and koken not in (f"http://127.0.0.1:{PORT}", f"http://localhost:{PORT}"):
+            return self._gonder(403, {"hata": "yasak"})
+        yol = urlparse(self.path).path
+        if yol == "/api/yenile":
             yenile()
             return self._gonder(200, durum)
+        if yol == "/api/guncelle":
+            guncellemeyi_baslat()
+            return self._gonder(200, surum_durumu)
         return self._gonder(404, {"hata": "bulunamadı"})
 
 
@@ -151,10 +191,21 @@ def port_dolu_mu(p):
 
 def main():
     adres = f"http://127.0.0.1:{PORT}/"
-    if port_dolu_mu(PORT):  # program zaten açık: sadece ekranı aç
-        webbrowser.open(adres)
+    guncelleme_sonrasi = "--guncelleme-sonrasi" in sys.argv
+    if guncelleme_sonrasi:
+        # eski sürümün kapanıp portu bırakmasını bekle; açık olan sayfa kendini yenileyecek
+        for _ in range(60):
+            if not port_dolu_mu(PORT):
+                break
+            time.sleep(0.5)
+    elif port_dolu_mu(PORT):  # program zaten açık: sadece ekranı aç
+        if "--tarayici-acma" not in sys.argv:
+            webbrowser.open(adres)
         return
     sunucu = ThreadingHTTPServer(("127.0.0.1", PORT), Isleyici)
+    sunucu_ref[0] = sunucu
+    threading.Thread(target=guncelle.eski_dosyayi_temizle, daemon=True).start()
+    threading.Thread(target=surumu_kontrol_et, daemon=True).start()
 
     try:
         eski = time.time() - os.path.getmtime(VERI_DOSYASI) > ESKI_SAYILIR_SANIYE
@@ -171,7 +222,7 @@ def main():
                 return
 
     threading.Thread(target=bekci, daemon=True).start()
-    if "--tarayici-acma" not in sys.argv:
+    if "--tarayici-acma" not in sys.argv and not guncelleme_sonrasi:
         threading.Timer(0.8, lambda: webbrowser.open(adres)).start()
     sunucu.serve_forever()
 
