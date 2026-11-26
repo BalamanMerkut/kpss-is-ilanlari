@@ -5,32 +5,13 @@ mezuniyetinize ve puanınıza göre listeleyen **ücretsiz Windows programı**.
 
 ## 📥 Kurulum
 
-> **Şu an GitHub adlı bir sitedesiniz.** Programcıların kodlarını paylaştığı bir sitedir.
-> **Üye olmanız veya giriş yapmanız gerekmez.** Sayfadaki dosya listesi ve diğer düğmeler programcılar içindir, onlara dokunmayın.
+1. **[⬇ PROGRAMI İNDİR](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)** yazısına tıkla.
+2. Tarayıcı uyarı verirse **Sakla**'ya tıkla.
+3. İnen **KPSS-Is-Ilanlari.exe** dosyasına çift tıkla.
+4. *"Windows bilgisayarınızı korudu"* çıkarsa **Ek bilgi → Yine de çalıştır**'a tıkla.
+5. Açılan sayfada mezuniyetini seç, puanını yaz.
 
-### 1️⃣ Programı indirin
-
-## [⬇ PROGRAMI İNDİRMEK İÇİN TIKLAYIN](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)
-
-- İndirme hemen başlar.
-- Tarayıcı *"yaygın olarak indirilmiyor"* diye uyarırsa: **Chrome'da "Sakla"**, **Edge'de "⋯" → "Sakla" → "Yine de sakla"** seçin.
-- ⚠ Yeşil **"Code"** düğmesine basmayın. O programcılar içindir, program inmez.
-
-### 2️⃣ İndirilen dosyayı açın
-
-- **KPSS-Is-Ilanlari.exe** dosyası bilgisayarınızın **"İndirilenler"** klasörüne gelir.
-  Tarayıcının sağ üst köşesindeki **⬇ (indirilenler)** simgesine tıklayıp oradan da açabilirsiniz.
-- Dosyaya **çift tıklayın**.
-- Mavi bir *"Windows bilgisayarınızı korudu"* penceresi çıkarsa: **"Ek bilgi"** yazısına, sonra **"Yine de çalıştır"** düğmesine tıklayın. *(Sadece ilk açılışta çıkar.)*
-
-### 3️⃣ Kullanın
-
-- Birkaç saniye sonra program **internet tarayıcınızda** açılır. İlk açılışta ilanlar 1 dakika kadar yüklenir.
-- Mezuniyetinizi seçin, KPSS puanınızı yazın. Her işin yanında **"✔ Yetiyor"** ya da **"✘ Yetmiyor"** yazar.
-- Sonra tekrar açmak için aynı dosyaya çift tıklamanız yeterli. İsterseniz dosyayı masaüstüne sürükleyin.
-- Yeni sürüm çıkınca programın üstünde **"Şimdi güncelle"** düğmesi belirir, tekrar indirmenize gerek kalmaz.
-
-> 📱 Program yalnızca **Windows bilgisayarda** çalışır; telefonda ve Mac'te çalışmaz.
+*Sadece Windows bilgisayarda çalışır.*
 
 ## ✔ Güvenli mi?
 
