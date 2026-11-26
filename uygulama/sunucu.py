@@ -22,7 +22,10 @@ import kaynaklar  # noqa: E402
 import osym  # noqa: E402,F401  (exe paketine dahil edilmesi için)
 import guncelle  # noqa: E402
 
-if EXE_MI:
+if EXE_MI and sys.platform == "darwin":
+    # Mac uygulaması: veriler kullanıcının Library/Application Support klasörüne
+    VERI_KLASORU = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "KPSS-Ilanlari")
+elif EXE_MI:
     # Arkadaşların bilgisayarında: veriler kullanıcının kendi klasörüne
     VERI_KLASORU = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "KPSS-Ilanlari")
 else:

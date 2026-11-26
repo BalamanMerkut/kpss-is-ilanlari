@@ -15,7 +15,7 @@ import sys
 import time
 import urllib.request
 
-SURUM = "1.4"
+SURUM = "1.5"
 REPO = "BalamanMerkut/kpss-is-ilanlari"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 SAYFA = f"https://github.com/{REPO}/releases/latest"
@@ -50,7 +50,9 @@ def kontrol(zaman=15):
 
 
 def otomatik_kurulabilir_mi(bilgi):
-    return bool(EXE_MI and bilgi and bilgi.get("url") and bilgi.get("sha256"))
+    # Yalnızca Windows exe'si kendini günceller. Mac'te program yeni sürümü haber verir,
+    # kullanıcı indirme sayfasından yeni sürümü indirir (Windows exe'si asla Mac'e kurulmaz).
+    return bool(EXE_MI and sys.platform == "win32" and bilgi and bilgi.get("url") and bilgi.get("sha256"))
 
 
 def eski_dosyayi_temizle():

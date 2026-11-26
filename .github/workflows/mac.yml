@@ -1,0 +1,86 @@
+# Her yeni sürüm (Release) yayımlandığında Mac uygulamasını GitHub'ın Mac makinelerinde derler,
+# gerçek verilerle dener ve indirme sayfasına ekler.
+name: Mac sürümü
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      etiket:
+        description: "Mac dosyasının ekleneceği sürüm (ör. v1.5). Boş bırakılırsa sadece derlenip denenir."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - makine: macos-latest       # Apple Silicon (M1, M2, M3...)
+            dosya: KPSS-Is-Ilanlari-Mac.zip
+          - makine: macos-15-intel     # Intel işlemcili eski Mac'ler
+            dosya: KPSS-Is-Ilanlari-Mac-Intel.zip
+    runs-on: ${{ matrix.makine }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.etiket || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Gerekenleri kur
+        run: pip install pyinstaller pymupdf pillow
+
+      - name: Mac uygulamasını derle
+        working-directory: uygulama
+        run: |
+          pyinstaller --noconfirm --windowed --name KPSS-Is-Ilanlari --icon simge.ico \
+            --osx-bundle-identifier io.github.balamanmerkut.kpss-is-ilanlari \
+            --add-data "arayuz.html:." --hidden-import osym --hidden-import pdf_tablo --hidden-import guncelle \
+            --collect-all pymupdf sunucu.py
+          APP=dist/KPSS-Is-Ilanlari.app
+          # Penceresi olmayan bir uygulama: Dock'ta zıplayan simge göstermesin
+          /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$APP/Contents/Info.plist"
+          codesign --force --deep -s - "$APP"
+
+      - name: Uygulama açılıyor mu?
+        run: |
+          APP=uygulama/dist/KPSS-Is-Ilanlari.app
+          KPSS_PORT=8799 "$APP/Contents/MacOS/KPSS-Is-Ilanlari" --tarayici-acma &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8799/api/nabiz >/dev/null && break; sleep 2; done
+          curl -sf http://127.0.0.1:8799/api/surum
+          curl -sf http://127.0.0.1:8799/ | grep -q "KPSS İş İlanları"
+          echo "Uygulama açıldı ve ekran geliyor."
+
+      - name: İlanlar okunuyor mu? (gerçek veriyle)
+        continue-on-error: true   # devlet siteleri yurt dışındaki sunuculara kapalı olabilir
+        run: |
+          for i in $(seq 1 150); do
+            curl -sf http://127.0.0.1:8799/api/durum | grep -q '"calisiyor": false' && break; sleep 2
+          done
+          curl -sf http://127.0.0.1:8799/api/veri | python3 -c "
+          import json, sys
+          v = json.load(sys.stdin)
+          n = len(v['ilanlar']); o = len((v.get('osym') or {}).get('kadrolar') or [])
+          print('ilan:', n, '| ÖSYM kadro:', o, '| hatalar:', v.get('hatalar'))
+          sys.exit(0 if n > 0 and o > 0 else 1)"
+
+      - name: Paketle
+        run: ditto -c -k --keepParent uygulama/dist/KPSS-Is-Ilanlari.app "${{ matrix.dosya }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.dosya }}
+          path: ${{ matrix.dosya }}
+
+      - name: İndirme sayfasına ekle
+        if: github.event_name == 'release' || inputs.etiket != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name || inputs.etiket }}" "${{ matrix.dosya }}" --clobber --repo "${{ github.repository }}"
