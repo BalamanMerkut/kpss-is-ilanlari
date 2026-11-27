@@ -1,17 +1,31 @@
 # KPSS İş İlanları
 
 KPSS ile başvurulabilen kamu iş ilanlarını **resmî devlet sitelerinden** toplayıp
-mezuniyetinize ve puanınıza göre listeleyen **ücretsiz Windows programı**.
+mezuniyetinize ve puanınıza göre listeleyen **ücretsiz Windows ve Mac programı**.
 
 ## 📥 Kurulum
 
-1. **[⬇ PROGRAMI İNDİR](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)** yazısına tıkla.
-2. Tarayıcı uyarı verirse **Sakla**'ya tıkla.
-3. İnen **KPSS-Is-Ilanlari.exe** dosyasına çift tıkla.
-4. *"Windows bilgisayarınızı korudu"* çıkarsa **Ek bilgi → Yine de çalıştır**'a tıkla.
-5. Açılan sayfada mezuniyetini seç, puanını yaz.
+### 🪟 Windows
 
-*Sadece Windows bilgisayarda çalışır.*
+1. **[⬇ WINDOWS İÇİN İNDİR](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari.exe)** yazısına tıkla.
+2. İnen **KPSS-Is-Ilanlari.exe** dosyasına çift tıkla.
+3. Mavi bir uyarı penceresi çıkarsa: **Ek bilgi** (*More info*) yazısına, sonra **Yine de çalıştır** (*Run anyway*) düğmesine tıkla.
+4. Açılan sayfada mezuniyetini seç, puanını yaz.
+
+*Tarayıcı dosyayı indirmeden engellerse: indirilenler listesinde dosyanın yanındaki **Sakla** (*Keep*) seçeneğine tıkla.*
+
+### 🍎 Mac
+
+1. Mac'ine uygun olanı indir:
+   - **[⬇ MAC İÇİN İNDİR — M1, M2, M3, M4…](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari-Mac.zip)**
+   - **[⬇ MAC İÇİN İNDİR — Intel işlemci](https://github.com/BalamanMerkut/kpss-is-ilanlari/releases/latest/download/KPSS-Is-Ilanlari-Mac-Intel.zip)**
+
+   *Hangisi? Ekranın sol üstündeki elma simgesi → **Bu Mac Hakkında**: "Çip: Apple M…" yazıyorsa ilki, "İşlemci: Intel" yazıyorsa ikincisi.*
+2. İnen zip'e çift tıkla, çıkan **KPSS-Is-Ilanlari** uygulamasına çift tıkla.
+3. "Açılamıyor" uyarısı çıkarsa **Bitti** (*Done*) de. Sonra **Sistem Ayarları → Gizlilik ve Güvenlik**'e gir, aşağı kaydır, **Yine de Aç** (*Open Anyway*)'a tıkla.
+4. Açılan sayfada mezuniyetini seç, puanını yaz.
+
+*Mac'te yeni sürüm çıkınca program haber verir; aynı bağlantıdan tekrar indir.*
 
 ## ✔ Güvenli mi?
 
