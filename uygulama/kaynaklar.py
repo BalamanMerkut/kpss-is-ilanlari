@@ -522,7 +522,7 @@ def _kk_nitelik(m):
                 continue
             elif re.match(r"^[A-ZÇĞİÖŞÜ\s]{6,}$", s):
                 break  # yeni büyük harfli başlık: özel şartlar bitti
-    return "\n".join(satirlar)[:800]
+    return "\n".join(satirlar)[:4000]
 
 
 def _kisa_baslik(b):

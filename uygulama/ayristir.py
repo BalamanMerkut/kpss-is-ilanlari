@@ -286,7 +286,7 @@ def tablolardan_pozisyonlar(tablolar):
                 if hucre and hucre not in nitelik_parca and hucre not in ("-", "—"):
                     nitelik_parca.append(hucre)
             sonuc.append({
-                "nitelik": " - ".join(nitelik_parca)[:800],
+                "nitelik": " - ".join(nitelik_parca)[:4000],
                 "unvan": unvan[:160],
                 "adet": adet,
                 "puan_turleri": pts,
@@ -422,16 +422,89 @@ def ilan_sartlari(metin):
     return liste
 
 
+def _uzunsa_kisalt(s, n=230):
+    """Uzun maddeyi kelime ortasından değil, virgül/noktalı virgül gibi doğal bir yerden kısaltır."""
+    s = bosluk(s).strip(" ,;:|")
+    if len(s) <= n:
+        return s
+    kes = max(s.rfind(", ", 0, n), s.rfind("; ", 0, n))
+    if kes < n * 0.5:
+        kes = s.rfind(" ", 0, n)
+    return s[:kes].rstrip(" ,;:") + "… (tamamı ilanda)"
+
+
+def _maddele(metin):
+    """Hücre metnini maddelere ayırır: a) b) c) / 1) 2) / - • işaretleri, satır sonları ve cümleler."""
+    t = (metin or "").replace("\r", "")
+    # örnek ve "sisteme yükleyin" türü açıklama parantezleri şart değildir
+    t = re.sub(r"\((?:\s*örne[ğk]|\s*ör\.)[^()]*\)", " ", t, flags=re.I)
+    t = re.sub(r"\([^()]*(?:yüklen|ibraz|beyan form)[^()]*\)", " ", t, flags=re.I)
+    t = re.sub(r"\s-\s+(?=[-•A-ZÇĞİÖŞÜ])", "\n", t)  # tablo sütunlarını birleştiren " - " ayıracı
+    # noktası unutulmuş şartlar: "...mezun olmak En az iki..." → ayrı madde
+    # ("olmak, En az..." gibi virgülle bitişik iki şart da ayrılır; bölüm listeleri fiil ile bitmediği için bölünmez)
+    for fiil in ("olmak", "olmamak", "belgelemek", "bulunmamak"):
+        t = re.sub(r"(?<=\b" + fiil + r")[,]?\s+(?=[A-ZÇĞİÖŞÜ][a-zçğıöşü])", "\n", t)
+    parcalar = re.split(r"\n+|(?:^|(?<=[\s.;,:]))(?:[a-zçğıöşü]|\d{1,2})\)\s*|(?:^|(?<=[.;:]))\s*[-•]\s*(?=\S)", t)
+    maddeler = []
+    for p in parcalar:
+        if not p or not p.strip():
+            continue
+        # cümleye böl: yalnızca noktadan sonra BÜYÜK harf/rakam geliyorsa ("cm. 'den" bölünmez)
+        for c in re.split(r"(?<=[.;])\s+(?=[A-ZÇĞİÖŞÜ0-9(])", p):
+            c = bosluk(c).lstrip("-–•* ").strip()
+            if not c:
+                continue
+            # küçük harf ya da noktalama ile başlayan parça önceki maddenin devamıdır
+            if maddeler and re.match(r"^[a-zçğıöşü'’\",)]", c):
+                maddeler[-1] += " " + c
+            else:
+                maddeler.append(c)
+    return maddeler
+
+
+def _ozetle(m):
+    """Çok sık geçen uzun kalıpları kısa ve aslına sadık bir cümleye çevirir; tanımazsa None."""
+    ml = tr_lower(m)
+    if re.search(r"yaşını|yaşından", ml):
+        p_ = r"\s*(?:\([^)]{0,25}\)\s*)?"  # "35 (otuz beş) yaşından" gibi yazıyla tekrar
+        alt = re.search(r"(\d{2})" + p_ + r"yaşını (doldurmuş|tamamlamış)", ml)
+        ust = re.search(r"(\d{2})" + p_ + r"yaşını (bitirmemiş|doldurmamış)|(\d{2})" + p_ + r"yaşından gün almamış", ml)
+        if ust:
+            parca = []
+            if alt:
+                parca.append(f"{alt.group(1)} yaşını {alt.group(2)}")
+            parca.append(f"{ust.group(1)} yaşını {ust.group(2)}" if ust.group(1) else f"{ust.group(3)} yaşından gün almamış")
+            dogum = re.search(r"(\d{1,2} \w+ \d{4}) ve sonrası doğumlu", m)
+            return "Yaş: " + ", ".join(parca) + " olmak" + (f" ({dogum.group(1)} ve sonrası doğumlular)" if dogum else "")
+    if re.search(r"\bboy", ml) and re.search(r"kilo", ml) and re.search(r"fark", ml):
+        return "Boy-kilo oranı şartı var (ayrıntı ilanda)"
+    m_boy = re.search(r"(\d{3})\s*cm[.\s'’]*(?:den|dan)?[^;]{0,15}kısa boylu olmamak", ml)
+    if m_boy:
+        return f"Boy: en az {m_boy.group(1)} cm"
+    if re.search(r"sağlık kurulu raporu|akıl hastalığı|bedensel özür|engel olabilecek[^.]{0,40}hastalı", ml):
+        return ("Sağlık: görevine engel bir hastalığı ya da engeli olmamak"
+                + (" (sağlık kurulu raporuyla belgelenecek)" if "sağlık kurulu raporu" in ml else ""))
+    if re.search(r"vardiya|hafta ?son|mesai saatleri dışında|gece", ml) and re.search(r"engel|çalışabil", ml):
+        turler = [ad for desen, ad in _CALISMA_TURLERI if re.search(desen, ml)]
+        return "Çalışma düzeni: " + ", ".join(turler) + " çalışmaya engeli olmamak"
+    return None
+
+
+_CALISMA_TURLERI = ((r"vardiya", "vardiyalı"), (r"mesai saatleri dışında", "mesai dışı"),
+                    (r"gece", "gece"), (r"hafta ?son", "hafta sonu"))
+
+
 def kadro_nitelikleri(metin):
     """Bir kadronun tablo/özel şart metnini kısa maddelere böler (bölüm, cinsiyet vb.)."""
     if not metin:
         return []
-    parcalar = re.split(r"\s*(?:\n|(?<=[.;])\s+|\s-\s|^-|•)\s*", metin)
     out = []
-    for p in parcalar:
-        p = _kisalt(p, 170)
+    for p in _maddele(metin):
+        if _SART_DEGIL.search(tr_lower(p)):
+            continue
+        p = _ozetle(p) or _uzunsa_kisalt(p)
         pl = tr_lower(p)
-        if len(p) < 6 or _SART_DEGIL.search(pl) or p in out:
+        if len(p) < 6 or p in out:
             continue
         if re.fullmatch(r"[\d\s/.,-]+", p):
             continue
@@ -442,8 +515,15 @@ def kadro_nitelikleri(metin):
             p = "Mezuniyet: " + (p[:1] + tr_lower(p[1:]) if p.isupper() else p)
         if p in out:
             continue
+        # aynı türden çalışma düzeni maddelerini tek satırda birleştir
+        onceki = next((i for i, x in enumerate(out) if x.startswith("Çalışma düzeni: ")), None)
+        if p.startswith("Çalışma düzeni: ") and onceki is not None:
+            birlesik = " ".join([out[onceki], p])
+            turler = [ad for _, ad in _CALISMA_TURLERI if ad in birlesik]
+            out[onceki] = "Çalışma düzeni: " + ", ".join(turler) + " çalışmaya engeli olmamak"
+            continue
         out.append(p)
-    return out[:6]
+    return out[:10]
 
 
 # ---------------------------------------------------------------- son başvuru tarihi
