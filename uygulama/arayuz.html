@@ -271,6 +271,7 @@ function ilanSatirlari(sev, digerleriDahil) {
         adet_ilan_geneli: pozlar.some((p) => p.ilan_geneli),
         asgari: asgariler.length ? Math.min(...asgariler) : null,
         turler, diger: pozlar.some((p) => ilanSeviyeleri(ilan, p).includes("diger")),
+        sartlar: (pozlar.find((p) => (p.sartlar || []).length) || {}).sartlar || [],
       });
     }
   }
@@ -465,12 +466,22 @@ function ilanAyrinti(s) {
   kutu.append(el("div", { style: "margin-top:10px" }, el("b", {}, ilan.baslik)));
   if (ilan.basvuru_baslangic && kalanGun(ilan.basvuru_baslangic) > 0)
     kutu.append(el("div", { style: "color:var(--kirmizi);font-weight:700" }, `🔜 Başvurular ${tarihYaz(ilan.basvuru_baslangic)} günü başlıyor.`));
+
+  // Şartlar: önce bu işe ait olanlar, sonra ilanda geçen genel şartlar
+  const isSartlari = [...s.sartlar];
+  if (s.asgari != null && s.turler.length)
+    isSartlari.push(`KPSS ${s.turler.slice(0, 3).join(" / ")} puanından en az ${sayiYaz(s.asgari)} almış olmak`);
+  if (isSartlari.length) kutu.append(el("h4", {}, "📋 Bu iş için şartlar"), el("ul", {}, isSartlari.map((m) => el("li", {}, m))));
+  if ((ilan.sartlar || []).length)
+    kutu.append(el("h4", {}, isSartlari.length ? "İlandaki diğer şartlar" : "📋 İlandaki şartlar"),
+      el("ul", {}, ilan.sartlar.map((m) => el("li", {}, m))));
+  if (isSartlari.length || (ilan.sartlar || []).length)
+    kutu.append(el("div", { class: "kaynak" }, "Kısa özettir; bazı şartlar yalnızca belirli kadrolar için geçerli olabilir. Başvurmadan önce ilanın tamamını okuyun."));
   if (s.yerler.length > 1 || (s.yerler[0] && s.yerler[0].yer)) {
     kutu.append(el("h4", {}, s.adet_ilan_geneli ? "Yer" : "Nerede, kaç kişi?"),
       el("ul", { class: s.yerler.length > 6 ? "yerler" : "" }, s.yerler.map((y) => el("li", {}, guzelYaz(y.yer || "—") + (y.adet && !s.adet_ilan_geneli ? ` — ${y.adet} kişi` : "")))));
   }
   if (s.adet_ilan_geneli && s.adet) kutu.append(el("div", { class: "kaynak" }, `Not: ${s.adet} kişi, ilanın tamamındaki toplam sayıdır (bütün kadrolar birlikte).`));
-  kutu.append(el("div", { style: "margin-top:8px" }, "Yaş, cinsiyet ve bölüm şartları için ilanın tamamını mutlaka okuyun."));
   const d = el("div", { class: "dugmeler" },
     el("button", { type: "button", class: "dugme", onclick: (e) => { e.stopPropagation(); metniAc(ilan); } }, "📄 İlanın tamamını oku"));
   const kl = guvenliLink(ilan.kaynak_link), bl = guvenliLink(ilan.basvuru_link);

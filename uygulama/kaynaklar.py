@@ -352,6 +352,7 @@ def topla(veri_klasoru, ilerleme=lambda s: None):
             "basvuru_link": basvuru_linki,
             "basvuru_baslangic": basvuru_baslangic,
             "metin": metin[:60000],
+            "sartlar": A.ilan_sartlari(metin),
             "pozisyonlar": pozlar,
         })
 
@@ -400,8 +401,14 @@ def topla(veri_klasoru, ilerleme=lambda s: None):
             "basvuru_link": _kk_link(k),
             "basvuru_baslangic": bb.isoformat() if bb and bb > bugun else None,
             "metin": tum_metin[:60000],
+            "sartlar": A.ilan_sartlari(tum_metin),
             "pozisyonlar": pozlar,
         })
+
+    # her kadronun şart metnini kısa maddelere çevir (ekranda "Şartlar" listesi)
+    for ilan in ilanlar:
+        for p in ilan["pozisyonlar"]:
+            p["sartlar"] = A.kadro_nitelikleri(p.pop("nitelik", ""))
 
     # bir ilanın içinde aynı kadro satırı iki kez okunduysa tek say
     for ilan in ilanlar:
@@ -486,15 +493,36 @@ def _kk_pozisyonlar(alt):
         if pt:
             sev = [x for x in (A.seviye_puanturunden(p) for p in pt) if x]
         unvan = (a.get("unvan") or a.get("ilanBaslik") or "").strip()
+        nitelik = _kk_nitelik(m)
         kont = a.get("kontenjanList") or []
         if not kont:
             pozlar.append({"unvan": unvan, "adet": None, "puan_turleri": pt, "seviye": sev,
-                           "asgari_puan": A.asgari_puan(m), "yer": "", "il": None})
+                           "asgari_puan": A.asgari_puan(m), "yer": "", "il": None, "nitelik": nitelik})
         for kk in kont:
             yer = kk.get("il") or ""
             pozlar.append({"unvan": unvan, "adet": kk.get("kontenjan") or None, "puan_turleri": pt, "seviye": sev,
-                           "asgari_puan": A.asgari_puan(m), "yer": yer, "il": A.il_bul(yer)})
+                           "asgari_puan": A.asgari_puan(m), "yer": yer, "il": A.il_bul(yer), "nitelik": nitelik})
     return pozlar
+
+
+def _kk_nitelik(m):
+    """Kariyer Kapısı kadro metninden mezuniyet, cinsiyet ve 'ÖZEL ŞARTLAR' maddeleri."""
+    satirlar = []
+    for etiket in ("MEZUN[İI]YET", "C[İI]NS[İI]YET"):
+        x = re.search(etiket + r"\s*:\s*([^\n]+)", m, re.I)
+        if x and A.bosluk(x.group(1)) not in ("", "-"):
+            satirlar.append(("Mezuniyet: " if etiket.startswith("MEZUN") else "Cinsiyet: ") + A.bosluk(x.group(1)))
+    ozel = re.search(r"ÖZEL\s*ŞARTLAR\s*\n(.*)", m, re.I | re.S)
+    if ozel:
+        for s in ozel.group(1).splitlines():
+            s = s.strip()
+            if re.match(r"^[-•*]\s*\S", s):
+                satirlar.append(s.lstrip("-•* ").strip())
+            elif s and satirlar and not re.match(r"^[A-ZÇĞİÖŞÜ\s]{6,}$", s) and len(satirlar) > 2:
+                continue
+            elif re.match(r"^[A-ZÇĞİÖŞÜ\s]{6,}$", s):
+                break  # yeni büyük harfli başlık: özel şartlar bitti
+    return "\n".join(satirlar)[:800]
 
 
 def _kisa_baslik(b):

@@ -256,6 +256,10 @@ def tablolardan_pozisyonlar(tablolar):
         if not b:
             continue
         _, bi, s = b
+        kullanilan = {v for k, v in s.items() if v is not None and k != "ogr"}
+        sart_sutunlari = [j for j, h in enumerate(tablo[bi])
+                          if j not in kullanilan and len(h) < 90
+                          and re.search(r"öğrenim|mezuniyet|niteli[kğ]|şart|tahsil|aranan|açıklama|özel|cinsiyet", tr_lower(h))]
         for satir in tablo[bi + 1:]:
             def h(k):
                 j = s.get(k)
@@ -276,7 +280,13 @@ def tablolardan_pozisyonlar(tablolar):
             if taban is None:
                 taban = asgari_puan(satir_metni)
             yer = bosluk(h("yer"))
+            nitelik_parca = []
+            for j in sart_sutunlari:
+                hucre = bosluk(satir[j]) if j < len(satir) else ""
+                if hucre and hucre not in nitelik_parca and hucre not in ("-", "—"):
+                    nitelik_parca.append(hucre)
             sonuc.append({
+                "nitelik": " - ".join(nitelik_parca)[:800],
                 "unvan": unvan[:160],
                 "adet": adet,
                 "puan_turleri": pts,
@@ -286,6 +296,154 @@ def tablolardan_pozisyonlar(tablolar):
                 "il": il_bul(yer) if yer else None,
             })
     return sonuc
+
+
+# ---------------------------------------------------------------- şartlar (kısa liste)
+def _kisalt(s, n=160):
+    s = bosluk(re.sub(r"^[\s\-–•*|)(a-zçğıöşü0-9]{0,4}[)\-.]\s*", "", bosluk(s)))
+    s = s.strip(" ,;:|")
+    return s if len(s) <= n else s[: n - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _cumleler(metin):
+    for c in re.split(r"(?<=[.;])\s+|\n|(?<=,)\s+(?=[a-zçğıöşü]\)\s)", metin or ""):
+        c = bosluk(c)
+        if 8 < len(c) < 400:
+            yield c
+
+
+# belge listesi, sınava giriş evrakı gibi "şart olmayan" cümleler
+_SART_DEGIL = re.compile(r"fotokopi|suret|onaylı örne|yanlarında|ibraz|yükle|aslı|tasdik|fotoğraf", re.I)
+
+
+def ilan_sartlari(metin):
+    """İlan metninden öne çıkan şartları kısa, okunur bir liste olarak çıkarır.
+
+    Yorum yapmaz: bulunan ifadeyi kısaltıp gösterir. Bulamadığını göstermez.
+    """
+    t = metin or ""
+    tl = tr_lower(t)
+    liste = []
+
+    # Yaş üst sınırı (alt sınır "18 yaşını tamamlamış" genel şarttır, gösterilmez)
+    yaslar = []
+    for c in _cumleler(t):
+        cl = tr_lower(c)
+        if _SART_DEGIL.search(cl):
+            continue
+        m = re.search(r"(\d{2})\s*(?:\([^)]{0,20}\)\s*)?yaş(?:ını|ından)\s*(doldurmamış|gün almamış|büyük olmamak)", cl)
+        if m and 18 < int(m.group(1)) < 70:
+            ifade = f"{m.group(1)} yaşını doldurmamış olmak" if m.group(2) == "doldurmamış" else f"{m.group(1)} yaşından gün almamış olmak"
+            if ifade not in yaslar:
+                yaslar.append(ifade)
+    if yaslar:
+        liste.append("Yaş: " + " / ".join(yaslar[:2]))
+
+    # Ehliyet
+    siniflar = []
+    for c in _cumleler(t):
+        cl = tr_lower(c)
+        if _SART_DEGIL.search(cl) or "sürücü belge" not in cl:
+            continue
+        for m in re.finditer(r"\(?\b([a-e]\d?e?)\)?\s*sınıfı\s*sürücü belge", cl):
+            s = m.group(1).upper()
+            if s not in siniflar:
+                siniflar.append(s)
+    if siniflar:
+        liste.append("Ehliyet: " + ", ".join(siniflar[:4]) + " sınıfı sürücü belgesi")
+
+    # Boy / kilo: sayılar net okunabiliyorsa kısaca yaz, okunamıyorsa sadece "şart var" de
+    for c in _cumleler(t):
+        cl = tr_lower(c)
+        if not (re.search(r"\bboy(u|unda|da|uzunluğu)?\b", cl) and re.search(r"kilo|\bkg\b", cl)):
+            continue
+        m = re.search(r"erkeklerde en az ([\d.,]+)\s*(metre|m\b|cm)[^,;]*?[,;]?\s*kadınlarda en az ([\d.,]+)\s*(metre|m\b|cm)", cl)
+        if m:
+            b1 = m.group(1).replace(".", ",") + (" m" if m.group(2) != "cm" else " cm")
+            b2 = m.group(3).replace(".", ",") + (" m" if m.group(4) != "cm" else " cm")
+            liste.append(f"Boy: erkek en az {b1}, kadın en az {b2} (kilo şartı da var)")
+        else:
+            m = re.search(r"en az (\d{3})\s*cm", cl)
+            liste.append(f"Boy: en az {m.group(1)} cm (kilo şartı da var)" if m else "Boy-kilo şartı var (ayrıntı ilanda)")
+        break
+
+    # Askerlik (erkek adaylar)
+    if re.search(r"askerlik", tl) and re.search(r"muaf|yapmış|tecil|ertelen", tl):
+        liste.append("Erkekler için: askerliğini yapmış, muaf ya da ertelenmiş olmak")
+
+    # Güvenlik görevlisi kimlik kartı vb. özel belge
+    for c in _cumleler(t):
+        cl = tr_lower(c)
+        if _SART_DEGIL.search(cl):
+            continue
+        if re.search(r"özel güvenlik görevlisi kimlik kart|silahlı .*kimlik kart", cl) and re.search(r"sahip olmak|olmak", cl):
+            liste.append("Belge: " + _kisalt(c, 150))
+            break
+
+    # Seçim şekli
+    secim = []
+    for anahtar, ad in ((r"noter (huzurunda )?kura", "noter kurası"), (r"yazılı sınav", "yazılı sınav"),
+                        (r"sözlü sınav", "sözlü sınav"), (r"uygulamalı sınav|uygulama sınavı", "uygulamalı sınav")):
+        if re.search(anahtar, tl):
+            secim.append(ad)
+    if secim:
+        liste.append("Seçim: " + ", ".join(secim))
+    elif re.search(r"kpss[^.]{0,60}(puan|sıra)[^.]{0,60}(esas|göre|sırala)", tl):
+        liste.append("Seçim: KPSS puan sırasına göre")
+
+    # Başvuru şekli: yalnızca "başvuru" geçen ve olumsuz olmayan cümlelerden
+    # ("e-Devlet'ten alınan belge" ya da "şahsen başvuru kabul edilmez" gibi cümleler sayılmaz)
+    # İtiraz dilekçesi, e-Devlet şifre zarfı, tebligat gibi başvuru dışı cümleler ve olumsuz ifadeler sayılmaz.
+    haric = r"kabul edilme|yapılamaz|alınmay|geçersiz|sorumlu|itiraz|tebligat|tebliğ|şifre|zarf|sonuç|faks|e-?mail|e-posta"
+    internet = cikti_teslim = False
+    elden = posta = False
+    for c in _cumleler(t):
+        cl = tr_lower(c)
+        if not re.search(r"başvuru|müracaat", cl):
+            continue
+        if re.search(r"çıktı", cl) and re.search(r"şahsen|elden|posta|teslim", cl) and not re.search(haric, cl):
+            cikti_teslim = True
+        if re.search(haric, cl):
+            continue
+        if (re.search(r"e-devlet|e‑devlet|kariyer kapısı|turkiye\.gov\.tr|isealim|elektronik ortam|internet|web sitesi|online", cl)
+                and re.search(r"üzerinden|aracılığıyla|yapıl|yapabil|bulunabil|alınacak", cl)):
+            internet = True
+        if re.search(r"\bşahsen|\belden\b|bizzat", cl):
+            elden = True
+        if re.search(r"posta (yoluyla|ile)|iadeli taahhütlü|kargo", cl):
+            posta = True
+    if internet:
+        yazi = "internetten"  # hangi site olduğu tahmin edilmez; adres "Başvuru sayfası" düğmesinde / ilanda
+        if cikti_teslim:
+            yazi += " — başvuru çıktısı ayrıca elden ya da posta ile teslim edilecek"
+        liste.append("Başvuru: " + yazi)
+    elif elden or posta:
+        liste.append("Başvuru: " + " veya ".join(x for x, var in (("şahsen kuruma giderek", elden), ("posta ile", posta)) if var))
+    return liste
+
+
+def kadro_nitelikleri(metin):
+    """Bir kadronun tablo/özel şart metnini kısa maddelere böler (bölüm, cinsiyet vb.)."""
+    if not metin:
+        return []
+    parcalar = re.split(r"\s*(?:\n|(?<=[.;])\s+|\s-\s|^-|•)\s*", metin)
+    out = []
+    for p in parcalar:
+        p = _kisalt(p, 170)
+        pl = tr_lower(p)
+        if len(p) < 6 or _SART_DEGIL.search(pl) or p in out:
+            continue
+        if re.fullmatch(r"[\d\s/.,-]+", p):
+            continue
+        # tek başına anlamsız kalan kısa değerlere etiket ekle
+        if re.fullmatch(r"(erkek|kadın)(\s*/\s*(erkek|kadın))?", pl.strip(" .")):
+            p = "Cinsiyet: " + p
+        elif re.fullmatch(r"(ön ?lisans|lisans|ortaöğretim|lise|yüksek lisans|ilköğretim|ortaokul)( \(.*\))?", pl.strip(" .")):
+            p = "Mezuniyet: " + (p[:1] + tr_lower(p[1:]) if p.isupper() else p)
+        if p in out:
+            continue
+        out.append(p)
+    return out[:6]
 
 
 # ---------------------------------------------------------------- son başvuru tarihi
