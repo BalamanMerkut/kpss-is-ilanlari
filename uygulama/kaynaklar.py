@@ -407,8 +407,14 @@ def topla(veri_klasoru, ilerleme=lambda s: None):
 
     # her kadronun şart metnini kısa maddelere çevir (ekranda "Şartlar" listesi)
     for ilan in ilanlar:
+        ozel = None
         for p in ilan["pozisyonlar"]:
             p["sartlar"] = A.kadro_nitelikleri(p.pop("nitelik", ""))
+            if not p["sartlar"]:
+                # kadro tablosu ilanda yoksa (ör. ayrı ek dosyada), metindeki "özel şartlar" bölümünü kullan
+                if ozel is None:
+                    ozel = A.ozel_sartlar(ilan.get("metin", ""))
+                p["sartlar"] = list(ozel)
 
     # bir ilanın içinde aynı kadro satırı iki kez okunduysa tek say
     for ilan in ilanlar:

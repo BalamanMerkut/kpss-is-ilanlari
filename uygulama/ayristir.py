@@ -476,6 +476,15 @@ def _ozetle(m):
             parca.append(f"{ust.group(1)} yaşını {ust.group(2)}" if ust.group(1) else f"{ust.group(3)} yaşından gün almamış")
             dogum = re.search(r"(\d{1,2} \w+ \d{4}) ve sonrası doğumlu", m)
             return "Yaş: " + ", ".join(parca) + " olmak" + (f" ({dogum.group(1)} ve sonrası doğumlular)" if dogum else "")
+    if re.search(r"\byds|e-yds|yökdil|yabancı dil", ml) and re.search(r"seviye|puan", ml) and not re.search(r"aranmaz\.?$", ml.strip()):
+        diller = [ad for ad in ("İngilizce", "Almanca", "Fransızca", "Arapça", "Rusça") if tr_lower(ad) in ml]
+        sev = re.search(r"en az \(?([a-e])\)?\s*seviye", ml)
+        pn = re.search(r"en az (\d{2,3})\s*(?:\([^)]{0,15}\)\s*)?puan", ml)
+        if sev or pn:
+            esik = f"en az ({sev.group(1).upper()}) seviyesi" if sev else f"en az {pn.group(1)} puan"
+            return ("Yabancı dil: YDS/e-YDS'den " + esik
+                    + (f" ({', '.join(diller)})" if diller else "")
+                    + (" ya da ÖSYM'nin denk saydığı belge" if "denk" in ml else ""))
     if re.search(r"\bboy", ml) and re.search(r"kilo", ml) and re.search(r"fark", ml):
         return "Boy-kilo oranı şartı var (ayrıntı ilanda)"
     m_boy = re.search(r"(\d{3})\s*cm[.\s'’]*(?:den|dan)?[^;]{0,15}kısa boylu olmamak", ml)
@@ -502,6 +511,9 @@ def kadro_nitelikleri(metin):
     for p in _maddele(metin):
         if _SART_DEGIL.search(tr_lower(p)):
             continue
+        # önceki maddenin açıklaması olan cümleler ("Ancak…", "Bu şekilde…", tamamı parantez içi bilgi) ayrı şart değildir
+        if re.match(r"^(ancak|bu şekilde|bu durumda|örneğin)\b", tr_lower(p)) or re.fullmatch(r"\(.*\)\.?", p.strip()):
+            continue
         p = _ozetle(p) or _uzunsa_kisalt(p)
         pl = tr_lower(p)
         if len(p) < 6 or p in out:
@@ -524,6 +536,58 @@ def kadro_nitelikleri(metin):
             continue
         out.append(p)
     return out[:10]
+
+
+_OZEL_BASLANGIC = re.compile(
+    r"aşağı(?:daki|da belirtilen) özel (?:şartlar|nitelikler|koşullar)[^:\n]{0,40}:"      # "...aşağıdaki özel şartlar aranır:"
+    r"|^[ \t]*(?:[ıivx\d]+[.)-]|[a-zçğıöşü][.)])?[ \t]*(?:başvuru(?:ya ilişkin)? )?özel (?:şartlar|koşullar)\w*[ \t]*:?[ \t]*$",  # "ÖZEL ŞARTLAR" başlığı
+    re.M)
+_BOLUM_SONU = re.compile(
+    r"^[ \t]*(?:[A-ZÇĞİÖŞÜ]|\d{1,2}|[IVX]{1,4})[.)-][ \t]*[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ \t/,]{5,}$"   # "B. BAŞVURU TARİHİ VE ŞEKLİ"
+    r"|^[ \t]*[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ \t/,]{7,}:?[ \t]*$"                                   # "İSTENEN BELGELER"
+    r"|^[ \t]*(?:\d{1,2}[.)-]\s*)?(?i:başvuru (?:tarihi|şekli|yeri|süresi)|istenen belgeler|sınav(?:ın)? (?:şekli|yeri|tarihi|konuları)|değerlendirme)",
+    re.M)  # büyük harf başlık kontrolleri harf duyarlı kalmalı; yalnızca anahtar kelimeler duyarsız
+
+
+def ozel_sartlar(metin):
+    """İlan metnindeki "özel şartlar" bölümünü bulup kısa maddelere çevirir (bulamazsa boş liste).
+
+    Kadro tablosu ilanın içinde olmayan (ayrı ek dosyada yayımlanan) ilanlar için kullanılır.
+    Genel şartlar (vatandaşlık, kamu hakları vb.) bu bölümde olmadığı için alınmaz.
+    """
+    t = metin or ""
+    m = _OZEL_BASLANGIC.search(tr_lower(t))
+    if not m:
+        return []
+    bolum = t[m.end(): m.end() + 5000]
+    son = _BOLUM_SONU.search(bolum)
+    if son:
+        bolum = bolum[: son.start()]
+    # Bölüm pozisyon pozisyon ayrılmışsa ("1-ARŞİV UZMANI", "2-AVUKAT"…) bu şartlar tek bir satıra
+    # yapıştırılmaz: başka pozisyonun şartı yanlışlıkla bu işe aitmiş gibi görünürdü.
+    basliklar = set()
+    for no, ad in re.findall(r"(?<!\w)(\d{1,2})[ \t]*[-.)][ \t]*([A-ZÇĞİÖŞÜ]{3,}(?:[ \t]+[A-ZÇĞİÖŞÜ()/]{2,})*)(?![a-zçğıöşü])", bolum):
+        if ad.split()[0] not in ("KPSS", "YDS", "ÖSYM", "KPSSP3", "ALES"):
+            basliklar.add(no)
+    if len(basliklar) >= 2:
+        return []
+    maddeler = []
+    for x in kadro_nitelikleri(bolum):
+        xl = tr_lower(x)
+        # "…de genel şartlara ilave olarak … özel şartlar aranır" gibi açıklama cümleleri madde değildir
+        if re.search(r"özel şartlar aranır|şartlara ilave olarak|aşağıdaki (?:özel )?şartlar", xl):
+            continue
+        # herkes için geçerli genel şartlar (657/48) özel şart değildir
+        if re.search(r"türkiye cumhuriyeti vatandaşı|kamu haklarından mahrum|657 sayılı|türk ceza kanunu|kazai rüşt", xl):
+            continue
+        # başvuru talimatları şart değildir ("…beyan etmesi gerekmektedir", "…tercihte bulunabilecek")
+        if "başvur" in xl and not re.search(r"olmak|olmamak|sahip|mezun", xl):
+            continue
+        # kadro başlıkları: "1 (Bir) Mühendis (…)", "1.SİSTEM YÖNETİCİSİ (3 Katı)"
+        if re.match(r"^\d+\s*\([a-zçğıöşü ]+\)\s", xl) or (re.match(r"^\d+[.)]", x) and sum(ch.isupper() for ch in x) > 0.5 * sum(ch.isalpha() for ch in x)):
+            continue
+        maddeler.append(x)
+    return maddeler
 
 
 # ---------------------------------------------------------------- son başvuru tarihi
